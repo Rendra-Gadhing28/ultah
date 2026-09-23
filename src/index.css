@@ -1,0 +1,56 @@
+@import url('https://fonts.googleapis.com/css2?family=Caveat:wght@400..700&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,400&family=Courier+Prime:ital,wght@0,400;0,700;1,400&family=Special+Elite&display=swap');
+
+@import "tailwindcss";
+
+@theme {
+  --color-cream: #FFF5E1;
+  --color-ivory-cream: #F7ECD4;
+  --color-soft-cream: #EFE2C6;
+  --color-warm-cream: #E6D7B9;
+  --color-dark-cream: #DCC8A3;
+  --color-card: #EFE2C6;
+
+  --color-wine-red: #B0303C;
+  --color-vintage-burgundy: #9B1D30;
+  --color-accent: #9B1D30;
+  --color-burgundy: #800020;
+  --color-oxblood: #5E0F1A;
+  --color-dark-burgundy: #3B0A12;
+  
+  --font-serif: "Cormorant Garamond", serif;
+  --font-mono: "Courier Prime", monospace;
+  --font-script: "Caveat", cursive;
+  --font-display: "Special Elite", cursive;
+}
+
+@layer base {
+  body {
+    background-color: var(--color-cream);
+    color: var(--color-dark-burgundy);
+    font-family: var(--font-serif);
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-spin-continuous {
+  animation: spin 7s linear infinite !important;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}

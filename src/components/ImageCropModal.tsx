@@ -25,25 +25,28 @@ function CropDialogContent({
   const [zoom, setZoom] = useState(1);
   const [rotation, setRotation] = useState(0);
   const [position, setPosition] = useState({ x: 0, y: 0 });
+  const [naturalDim, setNaturalDim] = useState<{ width: number; height: number }>({ width: 1, height: 1 });
+
   const isDraggingRef = useRef(false);
   const dragStartRef = useRef({ x: 0, y: 0 });
   const imageRef = useRef<HTMLImageElement>(null);
   const cropAreaRef = useRef<HTMLDivElement>(null);
 
-  // Touch & Mouse Drag Handlers
-  const handlePointerDown = (clientX: number, clientY: number) => {
+  // Unified Pointer Drag Handlers (Smooth on Touch & Mouse)
+  const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    e.currentTarget.setPointerCapture(e.pointerId);
     isDraggingRef.current = true;
     dragStartRef.current = {
-      x: clientX - position.x,
-      y: clientY - position.y,
+      x: e.clientX - position.x,
+      y: e.clientY - position.y,
     };
   };
 
-  const handlePointerMove = (clientX: number, clientY: number) => {
+  const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
     if (!isDraggingRef.current) return;
     setPosition({
-      x: clientX - dragStartRef.current.x,
-      y: clientY - dragStartRef.current.y,
+      x: e.clientX - dragStartRef.current.x,
+      y: e.clientY - dragStartRef.current.y,
     });
   };
 
@@ -56,13 +59,13 @@ function CropDialogContent({
     setRotation((prev) => (prev + 90) % 360);
   };
 
-  // Generate 1:1 Cropped Image on Canvas
+  // Generate 1:1 Square Cropped Image on Canvas with Undistorted Aspect Ratio
   const handleApplyCrop = useCallback(() => {
     if (!imageRef.current || !cropAreaRef.current) return;
     sfx.play('camera-shutter');
 
     const canvas = document.createElement('canvas');
-    const outputSize = 800; // 800x800 high-resolution crop
+    const outputSize = 900; // 900x900 Ultra-HD 1:1 square crop
     canvas.width = outputSize;
     canvas.height = outputSize;
     const ctx = canvas.getContext('2d');
@@ -70,32 +73,45 @@ function CropDialogContent({
 
     const img = imageRef.current;
     const cropBox = cropAreaRef.current.getBoundingClientRect();
-    const imgRect = img.getBoundingClientRect();
 
-    // Fill background
+    // Fill background with black film base
     ctx.fillStyle = '#000000';
     ctx.fillRect(0, 0, outputSize, outputSize);
 
-    // Save context state for transform
+    // Apply transform in output space
     ctx.save();
     ctx.translate(outputSize / 2, outputSize / 2);
     ctx.rotate((rotation * Math.PI) / 180);
+    ctx.scale(zoom, zoom);
 
-    // Calculate scale factor from screen crop area to 800px output canvas
-    const scaleFactor = outputSize / cropBox.width;
+    // Calculate natural base size fitting 1:1 box without any squashing/distortion
+    const aspect = (naturalDim.width || 1) / (naturalDim.height || 1);
+    let baseW = outputSize;
+    let baseH = outputSize;
 
-    // Center offset relative to crop box
-    const drawX = (imgRect.left + imgRect.width / 2 - (cropBox.left + cropBox.width / 2)) * scaleFactor;
-    const drawY = (imgRect.top + imgRect.height / 2 - (cropBox.top + cropBox.height / 2)) * scaleFactor;
-    const drawW = imgRect.width * scaleFactor;
-    const drawH = imgRect.height * scaleFactor;
+    if (aspect >= 1) {
+      baseH = outputSize;
+      baseW = outputSize * aspect;
+    } else {
+      baseW = outputSize;
+      baseH = outputSize / aspect;
+    }
 
-    ctx.drawImage(img, -drawW / 2 + drawX, -drawH / 2 + drawY, drawW, drawH);
+    // Position offset mapped to output canvas coordinate space
+    const transX = position.x * (outputSize / cropBox.width);
+    const transY = position.y * (outputSize / cropBox.height);
+
+    ctx.drawImage(img, -baseW / 2 + transX, -baseH / 2 + transY, baseW, baseH);
     ctx.restore();
 
     const croppedDataUrl = canvas.toDataURL('image/jpeg', 0.95);
     onCropComplete(croppedDataUrl, frameIndex);
-  }, [frameIndex, onCropComplete, rotation]);
+  }, [frameIndex, naturalDim, onCropComplete, position.x, position.y, rotation, zoom]);
+
+  // Compute CSS sizing so preview is never gepeng/stretched
+  const aspect = naturalDim.width / (naturalDim.height || 1);
+  const imgStyleWidth = aspect >= 1 ? `${aspect * 100}%` : '100%';
+  const imgStyleHeight = aspect < 1 ? `${(1 / aspect) * 100}%` : '100%';
 
   return (
     <motion.div
@@ -129,42 +145,46 @@ function CropDialogContent({
       <div className="w-full flex items-center justify-between text-[10px] font-mono text-cream/70 mb-2 px-1">
         <span className="flex items-center gap-1">
           <Move className="w-3 h-3 text-amber-300" />
-          <span>Geser untuk atur posisi</span>
+          <span>Geser / zoom agar pas</span>
         </span>
-        <span>1:1 Square Frame</span>
+        <span className="text-amber-300/80">Proporsional 1:1 (Anti-Gepeng)</span>
       </div>
 
       {/* 1:1 SQUARE CROP VIEWPORT */}
       <div
         ref={cropAreaRef}
-        onMouseDown={(e) => handlePointerDown(e.clientX, e.clientY)}
-        onMouseMove={(e) => handlePointerMove(e.clientX, e.clientY)}
-        onMouseUp={handlePointerUp}
-        onMouseLeave={handlePointerUp}
-        onTouchStart={(e) => {
-          if (e.touches[0]) handlePointerDown(e.touches[0].clientX, e.touches[0].clientY);
-        }}
-        onTouchMove={(e) => {
-          if (e.touches[0]) handlePointerMove(e.touches[0].clientX, e.touches[0].clientY);
-        }}
-        onTouchEnd={handlePointerUp}
-        className="relative w-64 sm:w-72 aspect-square rounded-xl overflow-hidden bg-black/60 border-2 border-amber-300/80 shadow-2xl cursor-grab active:cursor-grabbing flex items-center justify-center touch-none"
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
+        onPointerCancel={handlePointerUp}
+        style={{ touchAction: 'none' }}
+        className="relative w-64 sm:w-72 aspect-square rounded-xl overflow-hidden bg-black border-2 border-amber-300/80 shadow-2xl cursor-grab active:cursor-grabbing flex items-center justify-center select-none"
       >
-        {/* Image with transforms */}
+        {/* Natural Aspect-Ratio Image with Transforms */}
         <img
           ref={imageRef}
           src={imageSrc}
           alt="Crop preview"
           draggable={false}
+          onLoad={(e) => {
+            setNaturalDim({
+              width: e.currentTarget.naturalWidth || 1,
+              height: e.currentTarget.naturalHeight || 1,
+            });
+          }}
           style={{
+            width: imgStyleWidth,
+            height: imgStyleHeight,
+            maxWidth: 'none',
+            maxHeight: 'none',
             transform: `translate(${position.x}px, ${position.y}px) scale(${zoom}) rotate(${rotation}deg)`,
             transformOrigin: 'center center',
           }}
-          className="max-w-none w-full h-full object-cover pointer-events-none transition-transform duration-75"
+          className="object-contain pointer-events-none transition-transform duration-75"
         />
 
         {/* Grid 3x3 Overlay Guidelines */}
-        <div className="absolute inset-0 grid grid-cols-3 grid-rows-3 pointer-events-none border border-white/20">
+        <div className="absolute inset-0 grid grid-cols-3 grid-rows-3 pointer-events-none border border-white/25">
           <div className="border-r border-b border-white/20" />
           <div className="border-r border-b border-white/20" />
           <div className="border-b border-white/20" />
@@ -183,7 +203,7 @@ function CropDialogContent({
         <div className="flex items-center justify-between gap-3 bg-black/30 px-3 py-2 rounded-xl border border-white/10">
           <button
             type="button"
-            onClick={() => setZoom((prev) => Math.max(0.8, prev - 0.2))}
+            onClick={() => setZoom((prev) => Math.max(0.6, prev - 0.2))}
             className="p-1 text-cream/70 hover:text-cream cursor-pointer"
             title="Zoom Out"
           >
@@ -191,7 +211,7 @@ function CropDialogContent({
           </button>
           <input
             type="range"
-            min="0.8"
+            min="0.6"
             max="3.0"
             step="0.05"
             value={zoom}

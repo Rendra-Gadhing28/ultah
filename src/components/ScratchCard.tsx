@@ -55,6 +55,7 @@ export default function ScratchCard() {
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const isDrawingRef = useRef(false);
+  const lastPosRef = useRef<{ x: number; y: number } | null>(null);
 
   // Initialize metallic gold scratch foil for active canvas
   const initCanvas = useCallback(() => {
@@ -92,11 +93,11 @@ export default function ScratchCard() {
 
     ctx.fillStyle = '#3B0A12';
     ctx.font = 'bold 16px "Caveat", cursive';
-    ctx.fillText('✨ Gosok di sini untuk membuka foto hadiah ✨', width / 2, height / 2 + 10);
+    ctx.fillText('✨ Usap jarimu di sini untuk membuka ✨', width / 2, height / 2 + 10);
 
     ctx.font = '10px "Courier Prime", monospace';
     ctx.fillStyle = '#5E0F1A';
-    ctx.fillText('(Scratch to reveal gift)', width / 2, height / 2 + 32);
+    ctx.fillText('(Touch & scratch to reveal)', width / 2, height / 2 + 32);
   }, [activeTab, revealedStates]);
 
   useEffect(() => {
@@ -146,51 +147,71 @@ export default function ScratchCard() {
     }
   }, [activeTab, revealedStates]);
 
-  // Scratch Drawing Execution
-  const scratch = (clientX: number, clientY: number) => {
+  // Coordinates Mapping
+  const getCanvasCoords = (clientX: number, clientY: number) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return { x: 0, y: 0 };
+    const rect = canvas.getBoundingClientRect();
+    return {
+      x: ((clientX - rect.left) / rect.width) * canvas.width,
+      y: ((clientY - rect.top) / rect.height) * canvas.height,
+    };
+  };
+
+  // Continuous line scratching for 100% fluid mobile gesture without dotted gaps
+  const scratchLine = (fromX: number, fromY: number, toX: number, toY: number) => {
     const canvas = canvasRef.current;
     if (!canvas || revealedStates[activeTab]) return;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    const rect = canvas.getBoundingClientRect();
-    const x = (clientX - rect.left) * (canvas.width / rect.width);
-    const y = (clientY - rect.top) * (canvas.height / rect.height);
-
     ctx.globalCompositeOperation = 'destination-out';
+    ctx.lineWidth = 48; // Comfortable touch finger thickness
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+
     ctx.beginPath();
-    ctx.arc(x, y, 22, 0, Math.PI * 2);
+    ctx.moveTo(fromX, fromY);
+    ctx.lineTo(toX, toY);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.arc(toX, toY, 24, 0, Math.PI * 2);
     ctx.fill();
 
     checkProgress();
   };
 
-  const handleMouseDown = (e: React.MouseEvent) => {
+  // UNIFIED POINTER EVENT HANDLERS (Full Mobile Touch & Mouse Support)
+  const handlePointerDown = (e: React.PointerEvent<HTMLCanvasElement>) => {
+    e.currentTarget.setPointerCapture(e.pointerId);
     isDrawingRef.current = true;
-    scratch(e.clientX, e.clientY);
+    const pos = getCanvasCoords(e.clientX, e.clientY);
+    lastPosRef.current = pos;
+    scratchLine(pos.x, pos.y, pos.x, pos.y);
   };
 
-  const handleMouseMove = (e: React.MouseEvent) => {
+  const handlePointerMove = (e: React.PointerEvent<HTMLCanvasElement>) => {
     if (!isDrawingRef.current) return;
-    scratch(e.clientX, e.clientY);
+    const pos = getCanvasCoords(e.clientX, e.clientY);
+    if (lastPosRef.current) {
+      scratchLine(lastPosRef.current.x, lastPosRef.current.y, pos.x, pos.y);
+    } else {
+      scratchLine(pos.x, pos.y, pos.x, pos.y);
+    }
+    lastPosRef.current = pos;
   };
 
-  const handleMouseUp = () => {
+  const handlePointerUp = (e: React.PointerEvent<HTMLCanvasElement>) => {
+    if (isDrawingRef.current) {
+      try {
+        e.currentTarget.releasePointerCapture(e.pointerId);
+      } catch {
+        // Safe capture release
+      }
+    }
     isDrawingRef.current = false;
-  };
-
-  const handleTouchStart = (e: React.TouchEvent) => {
-    isDrawingRef.current = true;
-    if (e.touches[0]) {
-      scratch(e.touches[0].clientX, e.touches[0].clientY);
-    }
-  };
-
-  const handleTouchMove = (e: React.TouchEvent) => {
-    if (!isDrawingRef.current) return;
-    if (e.touches[0]) {
-      scratch(e.touches[0].clientX, e.touches[0].clientY);
-    }
+    lastPosRef.current = null;
   };
 
   // Direct reply to Rendra's WhatsApp with exact requested message
@@ -266,14 +287,14 @@ export default function ScratchCard() {
               <span className="font-bold text-amber-700">★ SPECIAL BIRTHDAY GIFT ★</span>
             </div>
 
-            {/* Middle: Gift Photo + Details */}
+            {/* Middle: Gift Photo + Details (Using object-contain so photo is never squashed) */}
             <div className="relative z-10 my-auto flex items-center justify-center gap-4 sm:gap-6 w-full max-w-lg px-2">
-              {/* Photo of the Gift Item */}
-              <div className="w-20 sm:w-28 md:w-32 aspect-square rounded-xl overflow-hidden bg-burgundy/10 border-2 border-amber-400/50 shadow-md shrink-0">
+              {/* Photo of the Gift Item (Clean square container with object-contain) */}
+              <div className="w-20 sm:w-28 md:w-32 aspect-square rounded-xl overflow-hidden bg-[#1f0407] border-2 border-amber-400/50 shadow-md shrink-0 flex items-center justify-center">
                 <img
                   src={giftTickets[activeTab].photo}
                   alt={giftTickets[activeTab].name}
-                  className="w-full h-full object-cover"
+                  className="w-full h-full object-contain"
                 />
               </div>
 
@@ -301,7 +322,7 @@ export default function ScratchCard() {
             </div>
           </div>
 
-          {/* OVERLYING CANVAS FOIL (Interactive Scratch Surface per Tab) */}
+          {/* OVERLYING CANVAS FOIL (Interactive Scratch Surface with Touch Action None & Pointer Events) */}
           <AnimatePresence>
             {!revealedStates[activeTab] && (
               <canvas
@@ -309,14 +330,12 @@ export default function ScratchCard() {
                 ref={canvasRef}
                 width={520}
                 height={300}
-                onMouseDown={handleMouseDown}
-                onMouseMove={handleMouseMove}
-                onMouseUp={handleMouseUp}
-                onMouseLeave={handleMouseUp}
-                onTouchStart={handleTouchStart}
-                onTouchMove={handleTouchMove}
-                onTouchEnd={handleMouseUp}
-                className="absolute inset-0 w-full h-full cursor-crosshair touch-none z-20"
+                onPointerDown={handlePointerDown}
+                onPointerMove={handlePointerMove}
+                onPointerUp={handlePointerUp}
+                onPointerCancel={handlePointerUp}
+                style={{ touchAction: 'none' }}
+                className="absolute inset-0 w-full h-full cursor-crosshair touch-none select-none z-20"
               />
             )}
           </AnimatePresence>

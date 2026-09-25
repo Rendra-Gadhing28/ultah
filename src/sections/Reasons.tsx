@@ -70,7 +70,7 @@ function StripFrame({
           <motion.img
             src={currentImg}
             alt={reason.title}
-            className="w-full h-full object-cover filter contrast-[1.05] brightness-95 group-hover:scale-105 transition-transform duration-500"
+            className="w-full h-full object-contain filter contrast-[1.05] brightness-95 group-hover:scale-105 transition-transform duration-500"
             loading="lazy"
             animate={{
               filter:

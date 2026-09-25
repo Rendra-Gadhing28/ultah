@@ -40,10 +40,10 @@ export default function Preloader({ onComplete }: { onComplete: () => void }) {
         transition={{ duration: 0.8, ease: 'easeOut' }}
         className="text-center relative z-10"
       >
-        {/* Pulsing Heart Icon */}
+        {/* Pulsing Heart Centerpiece Badge */}
         <motion.div
-          animate={{ scale: [1, 1.18, 1] }}
-          transition={{ repeat: Infinity, duration: 1.2, ease: 'easeInOut' }}
+          animate={{ scale: [1, 1.15, 1, 1.1, 1] }}
+          transition={{ repeat: Infinity, duration: 1.4, ease: 'easeInOut' }}
           className="w-16 h-16 mx-auto mb-6 bg-[#9B1D30]/15 rounded-full flex items-center justify-center shadow-inner"
         >
           <Heart className="w-8 h-8 text-[#9B1D30]" fill="currentColor" />
@@ -58,25 +58,28 @@ export default function Preloader({ onComplete }: { onComplete: () => void }) {
           Preparing something special
         </motion.p>
 
-        {/* Rhythmic Loading Text with 3 Perfectly Aligned CSS Circular Dots */}
-        <div className="inline-flex items-center justify-center font-mono text-xs tracking-[0.25em] text-[#800020]/80 uppercase">
+        {/* Rhythmic Loading Text with 3 Aligned Heartbeat Mini Love Icons */}
+        <div className="inline-flex items-center justify-center font-mono text-xs tracking-[0.25em] text-[#800020]/85 uppercase">
           <span>LOADING</span>
           <div className="flex items-center gap-1.5 ml-2.5">
-            <motion.span
-              animate={{ opacity: [0.25, 1, 0.25], scale: [0.85, 1.2, 0.85] }}
-              transition={{ repeat: Infinity, duration: 1.2, delay: 0, ease: 'easeInOut' }}
-              className="w-1.5 h-1.5 rounded-full bg-[#800020] inline-block"
-            />
-            <motion.span
-              animate={{ opacity: [0.25, 1, 0.25], scale: [0.85, 1.2, 0.85] }}
-              transition={{ repeat: Infinity, duration: 1.2, delay: 0.25, ease: 'easeInOut' }}
-              className="w-1.5 h-1.5 rounded-full bg-[#800020] inline-block"
-            />
-            <motion.span
-              animate={{ opacity: [0.25, 1, 0.25], scale: [0.85, 1.2, 0.85] }}
-              transition={{ repeat: Infinity, duration: 1.2, delay: 0.5, ease: 'easeInOut' }}
-              className="w-1.5 h-1.5 rounded-full bg-[#800020] inline-block"
-            />
+            {[0, 0.2, 0.4].map((delay, index) => (
+              <motion.div
+                key={index}
+                animate={{
+                  scale: [1, 1.35, 1, 1.2, 1],
+                  opacity: [0.35, 1, 0.7, 1, 0.35],
+                }}
+                transition={{
+                  repeat: Infinity,
+                  duration: 1.2,
+                  delay,
+                  ease: 'easeInOut',
+                }}
+                className="flex items-center justify-center"
+              >
+                <Heart className="w-3.5 h-3.5 text-[#800020]" fill="currentColor" />
+              </motion.div>
+            ))}
           </div>
         </div>
       </motion.div>

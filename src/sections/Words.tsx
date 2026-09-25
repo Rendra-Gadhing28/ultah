@@ -385,7 +385,12 @@ export default function Words() {
               <div className="relative z-10 grid grid-cols-1 md:grid-cols-12 gap-6 items-center flex-1">
                 {/* LEFT: POLAROID PHOTO AYUDYA (md:col-span-5) */}
                 <div className="md:col-span-5 flex flex-col items-center justify-center">
-                  <div className="bg-white p-3 pb-6 shadow-xl rounded-sm border border-black/10 rotate-[-2deg] hover:rotate-0 transition-transform duration-300 max-w-[240px] sm:max-w-[260px] w-full relative">
+                  <motion.div 
+                    className="bg-white p-3 pb-6 shadow-xl rounded-sm border border-black/10 rotate-[-2deg] hover:rotate-0 transition-transform duration-300 max-w-[240px] sm:max-w-[260px] w-full relative"
+                    initial={{ y: -30, opacity: 0, scale: 0.9 }}
+                    animate={{ y: isFlipped ? 0 : -30, opacity: isFlipped ? 1 : 0, scale: isFlipped ? 1 : 0.9 }}
+                    transition={{ duration: 0.7, delay: 0.25, type: 'spring', stiffness: 150 }}
+                  >
                     {/* Washi tape on top */}
                     <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-20 h-5 bg-amber-100/80 border-b border-amber-200/50 rotate-1 shadow-xs" />
 
@@ -406,7 +411,7 @@ export default function Words() {
                     <p className="font-mono text-[9px] text-center text-burgundy/60 tracking-widest uppercase mt-0.5">
                       The Birthday Girl · 18
                     </p>
-                  </div>
+                  </motion.div>
                 </div>
 
                 {/* RIGHT: THE 3 BIRTHDAY GIFTS (md:col-span-7) */}

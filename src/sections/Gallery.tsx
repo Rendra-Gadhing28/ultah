@@ -1,6 +1,4 @@
-import { DATA } from '../utils/constants';
-import Polaroid from '../components/Polaroid';
-import CanvasPolaroid from '../components/CanvasPolaroid';
+import FilmStrip from '../components/FilmStrip';
 import { motion, useScroll, useTransform } from 'framer-motion';
 import { useRef } from 'react';
 import { sfx } from '../utils/sfx';
@@ -8,7 +6,6 @@ import { sfx } from '../utils/sfx';
 export default function Gallery() {
   const containerRef = useRef<HTMLDivElement>(null);
   const headerPlayedRef = useRef(false);
-  const cameraPlayedRef = useRef(false);
   
   // Parallax effect for the whole section
   const { scrollYProgress } = useScroll({
@@ -16,11 +13,10 @@ export default function Gallery() {
     offset: ["start end", "end start"]
   });
   
-  const y1 = useTransform(scrollYProgress, [0, 1], [80, -80]);
-  const y2 = useTransform(scrollYProgress, [0, 1], [40, -120]);
-  const y3 = useTransform(scrollYProgress, [0, 1], [120, -60]);
-  const y4 = useTransform(scrollYProgress, [0, 1], [180, -180]);
-  const yCam = useTransform(scrollYProgress, [0, 1], [60, -100]);
+  const y1 = useTransform(scrollYProgress, [0, 1], [60, -60]);
+  const y2 = useTransform(scrollYProgress, [0, 1], [30, -90]);
+  const y3 = useTransform(scrollYProgress, [0, 1], [90, -45]);
+  const y4 = useTransform(scrollYProgress, [0, 1], [140, -140]);
   const yWallpaper = useTransform(scrollYProgress, [0, 1], [-60, 60]);
 
   return (
@@ -36,10 +32,10 @@ export default function Gallery() {
         viewport={{ once: true }}
       />
 
-      <div className="max-w-6xl mx-auto px-6">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 relative z-10">
         
         <motion.div 
-          className="text-center mb-16 relative z-10"
+          className="text-center mb-10 relative z-10"
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
@@ -54,94 +50,14 @@ export default function Gallery() {
           <h2 className="font-serif text-4xl md:text-5xl text-burgundy italic">
             "Favorite Moments"
           </h2>
+          <p className="font-mono text-xs text-burgundy/60 mt-2 uppercase tracking-widest">
+            35mm Analog Roll · 28 Jan 2027
+          </p>
         </motion.div>
 
-        {/* Gallery Grid / Collage */}
-        <div className="flex flex-col lg:flex-row items-center justify-center gap-8 lg:gap-12 relative z-10">
-          
-          {/* Polaroid 1 */}
-          <motion.div style={{ y: y1 }} className="z-10">
-            <Polaroid 
-              text={DATA.moments[0].text} 
-              img={DATA.moments[0].img}
-              rotation={-6} 
-              delay={0.1} 
-            />
-          </motion.div>
+        {/* 35mm Negative Film Strip Gallery (Style C) */}
+        <FilmStrip />
 
-          {/* Nikon Digicam Viewfinder with Ayudya's Photo Inside */}
-          <motion.div 
-            style={{ y: yCam }}
-            className="z-25 relative my-4 lg:my-0"
-            initial={{ scale: 0.9, opacity: 0 }}
-            whileInView={{ scale: 1, opacity: 1 }}
-            viewport={{ once: true }}
-            whileHover={{ scale: 1.04, rotate: 1 }}
-            transition={{ type: "spring", stiffness: 200, damping: 20 }}
-            onAnimationStart={() => {
-              if (!cameraPlayedRef.current) {
-                setTimeout(() => sfx.play('camera-shutter'), 300);
-                cameraPlayedRef.current = true;
-              }
-            }}
-          >
-            <div className="relative w-72 md:w-84 aspect-[599/417] drop-shadow-2xl">
-              {/* Photo inside camera screen cutout */}
-              <div className="absolute top-[18%] left-[8.5%] w-[59%] h-[64%] overflow-hidden rounded-sm bg-black">
-                <img 
-                  src={DATA.moments[1].img} 
-                  alt="Through the camera screen" 
-                  className="w-full h-full object-cover brightness-95 contrast-105"
-                />
-                {/* Vintage camcorder HUD overlay */}
-                <div className="absolute top-2 left-2 flex items-center gap-1.5 z-10 bg-black/40 px-1.5 py-0.5 rounded">
-                  <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
-                  <span className="font-mono text-[9px] text-white font-bold tracking-widest">REC</span>
-                </div>
-                <div className="absolute bottom-1.5 right-2 z-10 bg-black/40 px-1.5 py-0.5 rounded">
-                  <span className="font-mono text-[8px] text-white/90">28/01/2027</span>
-                </div>
-              </div>
-
-              {/* Real Camera Frame webp on top */}
-              <img 
-                src="/stickers/frame-kamera.webp" 
-                alt="Nikon Digicam" 
-                className="absolute inset-0 w-full h-full object-contain pointer-events-none z-20"
-              />
-            </div>
-            
-            <p className="font-script text-center text-xl text-burgundy mt-2">
-              my favorite view
-            </p>
-          </motion.div>
-
-          {/* Canvas Polaroid with Sine Wave motion */}
-          <motion.div style={{ y: y2 }} className="z-20 relative">
-            <CanvasPolaroid 
-              rotation={4} 
-              delay={0.3} 
-              imgSrc={DATA.moments[2].img}
-            />
-            <motion.img 
-              src="/stickers/butterfly.webp" 
-              alt="Butterfly" 
-              className="absolute -top-8 -right-8 w-18 md:w-22 drop-shadow-md z-30 pointer-events-none" 
-              animate={{ y: [0, -8, 0], rotate: [-4, 6, -4] }}
-              transition={{ repeat: Infinity, duration: 4, ease: "easeInOut" }}
-            />
-          </motion.div>
-
-          {/* Polaroid 2 */}
-          <motion.div style={{ y: y3 }} className="z-10">
-            <Polaroid 
-              text={DATA.moments[1].text} 
-              rotation={-4} 
-              delay={0.5} 
-            />
-          </motion.div>
-
-        </div>
       </div>
       
       {/* Background ambient stickers (parallaxed) */}

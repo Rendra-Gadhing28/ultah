@@ -1,6 +1,6 @@
 import { DATA } from '../utils/constants';
 import { motion, useScroll, useTransform } from 'framer-motion';
-import { useRef, useState } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import { sfx } from '../utils/sfx';
 
 function StripFrame({
@@ -11,6 +11,8 @@ function StripFrame({
   index: number;
 }) {
   const [isFlipped, setIsFlipped] = useState(false);
+  const [darkroomPhase, setDarkroomPhase] = useState<'initial' | 'developing' | 'revealed'>('initial');
+  const hasTriggeredRef = useRef(false);
 
   const handleClick = () => {
     sfx.play('flip');
@@ -23,6 +25,19 @@ function StripFrame({
       handleClick();
     }
   };
+
+  // Darkroom reveal process trigger on first interaction
+  useEffect(() => {
+    if (isFlipped && !hasTriggeredRef.current) {
+      hasTriggeredRef.current = true;
+      setDarkroomPhase('developing');
+      setTimeout(() => sfx.play('camera-shutter'), 350);
+      const timer = setTimeout(() => {
+        setDarkroomPhase('revealed');
+      }, 2200);
+      return () => clearTimeout(timer);
+    }
+  }, [isFlipped]);
 
   return (
     <div 
@@ -41,17 +56,41 @@ function StripFrame({
           transform: isFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)' 
         }}
       >
-        {/* Front Photo */}
+        {/* Front Photo (Style A: Vintage Darkroom Reveal) */}
         <div 
-          className="absolute inset-0 bg-[#161616] rounded-xs overflow-hidden border border-black/25 shadow-inner flex items-center justify-center"
+          className="absolute inset-0 bg-[#140507] rounded-xs overflow-hidden border border-black/25 shadow-inner flex items-center justify-center"
           style={{ backfaceVisibility: 'hidden' }}
         >
-          <img 
+          <motion.img 
             src={reason.img} 
             alt={reason.title} 
             className="w-full h-full object-cover filter contrast-[1.05] brightness-95 group-hover:scale-105 transition-transform duration-500" 
             loading="lazy"
+            animate={{
+              filter:
+                darkroomPhase === 'revealed'
+                  ? 'brightness(1) sepia(0) contrast(1.05)'
+                  : darkroomPhase === 'developing'
+                  ? [
+                      'brightness(0.2) sepia(1) contrast(1.3)',
+                      'brightness(0.7) sepia(0.7) contrast(1.2)',
+                      'brightness(1) sepia(0) contrast(1.05)',
+                    ]
+                  : 'brightness(0.95) sepia(0.08) contrast(1.05)',
+            }}
+            transition={{ duration: 2.2, ease: 'easeInOut' }}
           />
+
+          {/* Darkroom Safelight Glow during developing */}
+          {darkroomPhase === 'developing' && (
+            <motion.div
+              className="absolute inset-0 bg-[radial-gradient(circle_at_center,_rgba(255,120,40,0.35)_0%,_transparent_75%)] pointer-events-none"
+              initial={{ opacity: 1 }}
+              animate={{ opacity: 0 }}
+              transition={{ duration: 2.2 }}
+            />
+          )}
+
           {/* Subtle warm vignette */}
           <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/20 pointer-events-none" />
           
@@ -59,6 +98,15 @@ function StripFrame({
           <div className="absolute top-2.5 left-2.5 bg-black/65 backdrop-blur-xs px-2 py-0.5 rounded text-[10px] font-mono text-cream/90 tracking-wider">
             #{String(index + 1).padStart(2, '0')}
           </div>
+
+          {/* Developing Indicator Badge */}
+          {darkroomPhase === 'developing' && (
+            <div className="absolute top-2.5 right-2.5 bg-black/75 px-1.5 py-0.5 rounded-xs border border-amber-400/50">
+              <span className="font-mono text-[8px] text-amber-300 animate-pulse tracking-widest uppercase">
+                ● Developing
+              </span>
+            </div>
+          )}
 
           {/* Flip Hint */}
           <div className="absolute bottom-2.5 right-2.5 bg-black/50 group-hover:bg-black/75 backdrop-blur-xs px-2 py-0.5 rounded text-[9px] font-mono text-white/90 tracking-wider transition-colors flex items-center gap-1">

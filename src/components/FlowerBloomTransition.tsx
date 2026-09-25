@@ -26,7 +26,7 @@ export default function FlowerBloomTransition({ onComplete }: FlowerBloomTransit
       setPhase('disappearing');
     }, 8000);
 
-    // 4. Phase 4: Staggered flower disappear (2.0s) -> switches to background exit at 10.0s
+    // 4. Phase 4: Staggered flower & items disappear (2.0s) -> switches to background exit at 10.0s
     const t4 = setTimeout(() => {
       setPhase('bg-exit');
     }, 10000);
@@ -45,8 +45,8 @@ export default function FlowerBloomTransition({ onComplete }: FlowerBloomTransit
     };
   }, [onComplete]);
 
-  // Show flowers during blooming and full-bloom motion phases
-  const showFlowers = phase === 'blooming' || phase === 'bloomed-motion';
+  // Show items during blooming and full-bloom motion phases
+  const showItems = phase === 'blooming' || phase === 'bloomed-motion';
 
   return (
     <motion.div
@@ -77,8 +77,8 @@ export default function FlowerBloomTransition({ onComplete }: FlowerBloomTransit
           className="absolute inset-0 w-full h-full object-cover opacity-20 mix-blend-screen pointer-events-none transform-gpu"
           initial={{ opacity: 0.1 }}
           animate={{
-            opacity: showFlowers ? 0.25 : 0.15,
-            scale: showFlowers ? 1.04 : 1,
+            opacity: showItems ? 0.25 : 0.15,
+            scale: showItems ? 1.04 : 1,
           }}
           transition={{ duration: 3.0, ease: 'easeInOut' }}
         />
@@ -117,366 +117,293 @@ export default function FlowerBloomTransition({ onComplete }: FlowerBloomTransit
       />
 
       {/* =================================================================== */}
-      {/* 4. SPREAD FLOWER ASSET COMPONENTS (Hardware Accelerated)           */}
+      {/* 4. BALANCED STAGGERED ITEMS (Flowers, Dolls, Balloons, Butterflies) */}
       {/* =================================================================== */}
       <AnimatePresence>
-        {showFlowers && (
+        {showItems && (
           <>
-            {/* --- CORNER BRANCHES (All 4 Corners) --- */}
-            {/* 1. Corner Top-Left Branch */}
+            {/* --- 1. CORNER FLOWER BRANCHES (Framing all 4 corners) --- */}
+            {/* Top-Left Branch */}
             <motion.img
-              key="branch-top-left"
+              key="branch-tl"
               src="/stickers/flower_branch_1.webp"
               alt="Blooming Branch"
-              className="absolute -top-10 -left-10 sm:-top-16 sm:-left-16 w-64 sm:w-84 md:w-[26rem] drop-shadow-lg z-20 origin-top-left transform-gpu"
+              className="absolute -top-10 -left-10 sm:-top-16 sm:-left-16 w-56 sm:w-80 md:w-96 drop-shadow-md z-20 origin-top-left transform-gpu"
               initial={{ scale: 0, rotate: -40, opacity: 0 }}
               animate={{
                 scale: phase === 'bloomed-motion' ? [1, 1.03, 1] : 1,
                 rotate: phase === 'bloomed-motion' ? [6, 8, 6] : 6,
                 opacity: 1,
               }}
-              exit={{ scale: 0, opacity: 0, transition: { duration: 1.0, delay: 0.6 } }}
+              exit={{ scale: 0, opacity: 0, transition: { duration: 0.9, delay: 0.5 } }}
               transition={{
-                duration: 1.8,
+                duration: 1.6,
                 delay: 0.05,
                 ease: [0.34, 1.56, 0.64, 1],
                 rotate: phase === 'bloomed-motion' ? { repeat: Infinity, duration: 2.5, ease: 'easeInOut' } : undefined,
               }}
             />
 
-            {/* 2. Corner Top-Right Branch */}
+            {/* Top-Right Branch */}
             <motion.img
-              key="branch-top-right"
+              key="branch-tr"
               src="/stickers/flower_branch_2.webp"
               alt="Blooming Branch"
-              className="absolute -top-10 -right-10 sm:-top-16 sm:-right-16 w-64 sm:w-84 md:w-[26rem] drop-shadow-lg z-20 origin-top-right -scale-x-100 transform-gpu"
+              className="absolute -top-10 -right-10 sm:-top-16 sm:-right-16 w-56 sm:w-80 md:w-96 drop-shadow-md z-20 origin-top-right -scale-x-100 transform-gpu"
               initial={{ scale: 0, rotate: 40, opacity: 0 }}
               animate={{
                 scale: phase === 'bloomed-motion' ? [1, 1.03, 1] : 1,
                 rotate: phase === 'bloomed-motion' ? [-6, -8, -6] : -6,
                 opacity: 1,
               }}
-              exit={{ scale: 0, opacity: 0, transition: { duration: 1.0, delay: 0.55 } }}
+              exit={{ scale: 0, opacity: 0, transition: { duration: 0.9, delay: 0.45 } }}
               transition={{
-                duration: 1.8,
+                duration: 1.6,
                 delay: 0.15,
                 ease: [0.34, 1.56, 0.64, 1],
                 rotate: phase === 'bloomed-motion' ? { repeat: Infinity, duration: 2.5, ease: 'easeInOut' } : undefined,
               }}
             />
 
-            {/* 3. Corner Bottom-Left Branch */}
+            {/* Bottom-Left Branch */}
             <motion.img
-              key="branch-bottom-left"
+              key="branch-bl"
               src="/stickers/flower_branch_1.webp"
               alt="Blooming Branch"
-              className="absolute -bottom-10 -left-10 sm:-bottom-16 sm:-left-16 w-64 sm:w-84 md:w-[26rem] drop-shadow-lg z-20 origin-bottom-left -scale-y-100 transform-gpu"
+              className="absolute -bottom-10 -left-10 sm:-bottom-16 sm:-left-16 w-56 sm:w-80 md:w-96 drop-shadow-md z-20 origin-bottom-left -scale-y-100 transform-gpu"
               initial={{ scale: 0, rotate: -40, opacity: 0 }}
               animate={{
                 scale: phase === 'bloomed-motion' ? [1, 1.03, 1] : 1,
                 rotate: phase === 'bloomed-motion' ? [-6, -8, -6] : -6,
                 opacity: 1,
               }}
-              exit={{ scale: 0, opacity: 0, transition: { duration: 1.0, delay: 0.5 } }}
+              exit={{ scale: 0, opacity: 0, transition: { duration: 0.9, delay: 0.4 } }}
               transition={{
-                duration: 1.8,
+                duration: 1.6,
                 delay: 0.25,
                 ease: [0.34, 1.56, 0.64, 1],
                 rotate: phase === 'bloomed-motion' ? { repeat: Infinity, duration: 2.5, ease: 'easeInOut' } : undefined,
               }}
             />
 
-            {/* 4. Corner Bottom-Right Branch */}
+            {/* Bottom-Right Branch */}
             <motion.img
-              key="branch-bottom-right"
+              key="branch-br"
               src="/stickers/flower_branch_2.webp"
               alt="Blooming Branch"
-              className="absolute -bottom-10 -right-10 sm:-bottom-16 sm:-right-16 w-64 sm:w-84 md:w-[26rem] drop-shadow-lg z-20 origin-bottom-right transform-gpu"
+              className="absolute -bottom-10 -right-10 sm:-bottom-16 sm:-right-16 w-56 sm:w-80 md:w-96 drop-shadow-md z-20 origin-bottom-right transform-gpu"
               initial={{ scale: 0, rotate: 40, opacity: 0 }}
               animate={{
                 scale: phase === 'bloomed-motion' ? [1, 1.03, 1] : 1,
                 rotate: phase === 'bloomed-motion' ? [6, 8, 6] : 6,
                 opacity: 1,
               }}
-              exit={{ scale: 0, opacity: 0, transition: { duration: 1.0, delay: 0.45 } }}
+              exit={{ scale: 0, opacity: 0, transition: { duration: 0.9, delay: 0.35 } }}
               transition={{
-                duration: 1.8,
+                duration: 1.6,
                 delay: 0.35,
                 ease: [0.34, 1.56, 0.64, 1],
                 rotate: phase === 'bloomed-motion' ? { repeat: Infinity, duration: 2.5, ease: 'easeInOut' } : undefined,
               }}
             />
 
-            {/* --- OUTER EDGES --- */}
-            {/* 5. Mid-Left Roses */}
+            {/* --- 2. CUTE DOLLS (Boneka & Rose Bear) --- */}
+            {/* Cute Teddy Bear (Left Mid-Canvas) */}
             <motion.img
-              key="roses-mid-left"
-              src="/stickers/red_roses.webp"
-              alt="Red Roses"
-              className="absolute left-0 top-1/2 -translate-y-1/2 w-32 sm:w-44 md:w-52 drop-shadow-md z-25 origin-left transform-gpu"
-              initial={{ scale: 0, x: -30, opacity: 0 }}
+              key="boneka-left"
+              src="/stickers/boneka.webp"
+              alt="Cute Teddy Bear"
+              className="absolute left-4 sm:left-14 top-1/2 -translate-y-1/2 w-24 sm:w-36 md:w-44 drop-shadow-xl z-30 origin-center transform-gpu"
+              initial={{ scale: 0, rotate: -15, opacity: 0 }}
               animate={{
-                scale: phase === 'bloomed-motion' ? [1, 1.05, 1] : 1,
-                rotate: phase === 'bloomed-motion' ? [-8, -4, -8] : -8,
+                scale: phase === 'bloomed-motion' ? [1, 1.06, 1] : 1,
+                rotate: phase === 'bloomed-motion' ? [-10, -5, -10] : -8,
+                y: phase === 'bloomed-motion' ? [-3, 3, -3] : 0,
                 opacity: 1,
-              }}
-              exit={{ scale: 0, opacity: 0, transition: { duration: 0.9, delay: 0.4 } }}
-              transition={{ duration: 1.6, delay: 0.45, ease: [0.34, 1.56, 0.64, 1] }}
-            />
-
-            {/* 6. Mid-Right Roses */}
-            <motion.img
-              key="roses-mid-right"
-              src="/stickers/red_roses.webp"
-              alt="Red Roses"
-              className="absolute right-0 top-1/2 -translate-y-1/2 w-32 sm:w-44 md:w-52 drop-shadow-md z-25 origin-right -scale-x-100 transform-gpu"
-              initial={{ scale: 0, x: 30, opacity: 0 }}
-              animate={{
-                scale: phase === 'bloomed-motion' ? [1, 1.05, 1] : 1,
-                rotate: phase === 'bloomed-motion' ? [8, 4, 8] : 8,
-                opacity: 1,
-              }}
-              exit={{ scale: 0, opacity: 0, transition: { duration: 0.9, delay: 0.35 } }}
-              transition={{ duration: 1.6, delay: 0.55, ease: [0.34, 1.56, 0.64, 1] }}
-            />
-
-            {/* 7. Mid-Top Floral Arc */}
-            <motion.img
-              key="bouquet-top"
-              src="/stickers/boquet2.webp"
-              alt="Floral Bloom Top"
-              className="absolute top-2 left-1/2 -translate-x-1/2 w-36 sm:w-48 md:w-56 drop-shadow-md z-25 origin-top transform-gpu"
-              initial={{ scale: 0, y: -40, opacity: 0 }}
-              animate={{
-                scale: phase === 'bloomed-motion' ? [1, 1.04, 1] : 1,
-                y: phase === 'bloomed-motion' ? [0, 4, 0] : 0,
-                opacity: 0.95,
               }}
               exit={{ scale: 0, opacity: 0, transition: { duration: 0.8, delay: 0.3 } }}
-              transition={{ duration: 1.6, delay: 0.65, ease: [0.34, 1.56, 0.64, 1] }}
+              transition={{
+                duration: 1.5,
+                delay: 0.45,
+                ease: [0.34, 1.56, 0.64, 1],
+                y: phase === 'bloomed-motion' ? { repeat: Infinity, duration: 2.8, ease: 'easeInOut' } : undefined,
+              }}
             />
 
-            {/* 8. Mid-Bottom Floral Arc */}
+            {/* Rose Bear (Upper-Left Quadrant) */}
             <motion.img
-              key="bouquet-bottom"
-              src="/stickers/boquet3.webp"
-              alt="Floral Bloom Bottom"
-              className="absolute bottom-2 left-1/2 -translate-x-1/2 w-36 sm:w-48 md:w-56 drop-shadow-md z-25 origin-bottom transform-gpu"
-              initial={{ scale: 0, y: 40, opacity: 0 }}
+              key="rose-bear-ul"
+              src="/stickers/rose_bear.webp"
+              alt="Rose Bear"
+              className="absolute top-16 left-12 sm:left-32 md:left-44 w-22 sm:w-32 md:w-40 drop-shadow-xl z-25 origin-center transform-gpu"
+              initial={{ scale: 0, rotate: 12, opacity: 0 }}
               animate={{
-                scale: phase === 'bloomed-motion' ? [1, 1.04, 1] : 1,
-                y: phase === 'bloomed-motion' ? [0, -4, 0] : 0,
-                opacity: 0.95,
+                scale: phase === 'bloomed-motion' ? [1, 1.05, 1] : 1,
+                rotate: phase === 'bloomed-motion' ? [8, 14, 8] : 10,
+                opacity: 1,
               }}
               exit={{ scale: 0, opacity: 0, transition: { duration: 0.8, delay: 0.25 } }}
-              transition={{ duration: 1.6, delay: 0.75, ease: [0.34, 1.56, 0.64, 1] }}
+              transition={{
+                duration: 1.5,
+                delay: 0.55,
+                ease: [0.34, 1.56, 0.64, 1],
+              }}
             />
 
-            {/* --- INNER SPREAD QUADRANTS --- */}
-            {/* 9. Upper-Left Rose Bouquet */}
+            {/* --- 3. BALLOONS & BIRTHDAY CAKE --- */}
+            {/* Heart Balloons (Upper-Right Quadrant) */}
             <motion.img
-              key="rose-upper-left"
+              key="balloons-ur"
+              src="/stickers/heart_balloons.webp"
+              alt="Heart Balloons"
+              className="absolute top-14 right-10 sm:right-28 md:right-40 w-28 sm:w-40 md:w-48 drop-shadow-xl z-25 origin-center transform-gpu"
+              initial={{ scale: 0, y: 30, opacity: 0 }}
+              animate={{
+                scale: phase === 'bloomed-motion' ? [1, 1.04, 1] : 1,
+                y: phase === 'bloomed-motion' ? [0, -6, 0] : 0,
+                rotate: phase === 'bloomed-motion' ? [4, -4, 4] : 4,
+                opacity: 1,
+              }}
+              exit={{ scale: 0, y: -40, opacity: 0, transition: { duration: 0.8, delay: 0.2 } }}
+              transition={{
+                duration: 1.6,
+                delay: 0.65,
+                ease: [0.34, 1.56, 0.64, 1],
+                y: phase === 'bloomed-motion' ? { repeat: Infinity, duration: 3, ease: 'easeInOut' } : undefined,
+              }}
+            />
+
+            {/* Birthday Cake (Lower-Right Quadrant) */}
+            <motion.img
+              key="cake-lr"
+              src="/stickers/birthday_cake.webp"
+              alt="Birthday Cake"
+              className="absolute bottom-16 right-10 sm:right-28 md:right-40 w-24 sm:w-36 md:w-44 drop-shadow-xl z-30 origin-center transform-gpu"
+              initial={{ scale: 0, y: 20, opacity: 0 }}
+              animate={{
+                scale: phase === 'bloomed-motion' ? [1, 1.05, 1] : 1,
+                rotate: phase === 'bloomed-motion' ? [-4, 4, -4] : -4,
+                opacity: 1,
+              }}
+              exit={{ scale: 0, opacity: 0, transition: { duration: 0.7, delay: 0.15 } }}
+              transition={{
+                duration: 1.5,
+                delay: 0.75,
+                ease: [0.34, 1.56, 0.64, 1],
+              }}
+            />
+
+            {/* --- 4. FLOWER BOUQUETS & ROSES --- */}
+            {/* Rose Bouquet (Lower-Left Quadrant) */}
+            <motion.img
+              key="bouquet-ll"
               src="/stickers/rose_bouquet.webp"
               alt="Rose Bouquet"
-              className="absolute top-16 left-10 sm:left-28 md:left-40 w-32 sm:w-40 md:w-48 drop-shadow-md z-30 origin-center transform-gpu"
+              className="absolute bottom-14 left-12 sm:left-32 md:left-44 w-28 sm:w-40 md:w-48 drop-shadow-lg z-25 origin-center transform-gpu"
               initial={{ scale: 0, rotate: -20, opacity: 0 }}
               animate={{
                 scale: phase === 'bloomed-motion' ? [1, 1.05, 1] : 1,
-                rotate: phase === 'bloomed-motion' ? [-10, -5, -10] : -10,
+                rotate: phase === 'bloomed-motion' ? [-12, -7, -12] : -10,
                 opacity: 1,
               }}
-              exit={{ scale: 0, opacity: 0, transition: { duration: 0.8, delay: 0.2 } }}
-              transition={{ duration: 1.5, delay: 0.85, ease: [0.34, 1.56, 0.64, 1] }}
+              exit={{ scale: 0, opacity: 0, transition: { duration: 0.7, delay: 0.15 } }}
+              transition={{ duration: 1.4, delay: 0.85, ease: [0.34, 1.56, 0.64, 1] }}
             />
 
-            {/* 10. Upper-Right Rose Bouquet 2 */}
+            {/* Red Roses Bouquet (Right Mid-Canvas) */}
             <motion.img
-              key="rose-upper-right"
+              key="roses-mid-right"
               src="/stickers/rose_bouquet_2.webp"
-              alt="Rose Bouquet 2"
-              className="absolute top-16 right-10 sm:right-28 md:right-40 w-32 sm:w-40 md:w-48 drop-shadow-md z-30 origin-center transform-gpu"
-              initial={{ scale: 0, rotate: 20, opacity: 0 }}
+              alt="Roses Bouquet"
+              className="absolute right-4 sm:right-14 top-1/2 -translate-y-1/2 w-26 sm:w-38 md:w-46 drop-shadow-xl z-30 origin-right transform-gpu"
+              initial={{ scale: 0, x: 25, opacity: 0 }}
               animate={{
                 scale: phase === 'bloomed-motion' ? [1, 1.05, 1] : 1,
-                rotate: phase === 'bloomed-motion' ? [10, 5, 10] : 10,
+                rotate: phase === 'bloomed-motion' ? [8, 4, 8] : 6,
                 opacity: 1,
               }}
-              exit={{ scale: 0, opacity: 0, transition: { duration: 0.8, delay: 0.2 } }}
-              transition={{ duration: 1.5, delay: 0.95, ease: [0.34, 1.56, 0.64, 1] }}
+              exit={{ scale: 0, opacity: 0, transition: { duration: 0.7, delay: 0.1 } }}
+              transition={{ duration: 1.4, delay: 0.95, ease: [0.34, 1.56, 0.64, 1] }}
             />
 
-            {/* 11. Lower-Left Bouquet 1 */}
+            {/* Delicate Accent Flower (Top-Center) */}
             <motion.img
-              key="bouquet-lower-left"
-              src="/stickers/boquet1.webp"
-              alt="Floral Bouquet"
-              className="absolute bottom-16 left-10 sm:left-28 md:left-40 w-32 sm:w-40 md:w-48 drop-shadow-md z-30 origin-center transform-gpu"
-              initial={{ scale: 0, rotate: -25, opacity: 0 }}
-              animate={{
-                scale: phase === 'bloomed-motion' ? [1, 1.05, 1] : 1,
-                rotate: phase === 'bloomed-motion' ? [-12, -7, -12] : -12,
-                opacity: 1,
-              }}
-              exit={{ scale: 0, opacity: 0, transition: { duration: 0.8, delay: 0.15 } }}
-              transition={{ duration: 1.5, delay: 1.05, ease: [0.34, 1.56, 0.64, 1] }}
-            />
-
-            {/* 12. Lower-Right Bouquet 2 */}
-            <motion.img
-              key="bouquet-lower-right"
-              src="/stickers/rose_bouquet.webp"
-              alt="Rose Bouquet"
-              className="absolute bottom-16 right-10 sm:right-28 md:right-40 w-32 sm:w-40 md:w-48 drop-shadow-md z-30 origin-center -scale-x-100 transform-gpu"
-              initial={{ scale: 0, rotate: 25, opacity: 0 }}
-              animate={{
-                scale: phase === 'bloomed-motion' ? [1, 1.05, 1] : 1,
-                rotate: phase === 'bloomed-motion' ? [12, 7, 12] : 12,
-                opacity: 1,
-              }}
-              exit={{ scale: 0, opacity: 0, transition: { duration: 0.8, delay: 0.15 } }}
-              transition={{ duration: 1.5, delay: 1.15, ease: [0.34, 1.56, 0.64, 1] }}
-            />
-
-            {/* --- SCATTERED ACCENT BLOSSOMS (Lightweight for Mobile & Desktop) --- */}
-            {/* 13. Blossom Far Top-Left */}
-            <motion.img
-              key="blossom-1"
+              key="flower-top-center"
               src="/stickers/flower-1.webp"
-              alt="Blossom Flower"
-              className="absolute top-32 left-4 sm:left-12 w-16 sm:w-22 drop-shadow-sm z-35 transform-gpu"
-              initial={{ scale: 0, rotate: -35, opacity: 0 }}
+              alt="Flower"
+              className="absolute top-4 left-1/2 -translate-x-1/2 w-16 sm:w-22 drop-shadow-sm z-25 transform-gpu"
+              initial={{ scale: 0, y: -20, opacity: 0 }}
               animate={{
                 scale: phase === 'bloomed-motion' ? [1, 1.08, 1] : 1,
-                rotate: phase === 'bloomed-motion' ? [-20, -12, -20] : -20,
-                opacity: 1,
-              }}
-              exit={{ scale: 0, opacity: 0, transition: { duration: 0.6, delay: 0.1 } }}
-              transition={{ duration: 1.3, delay: 1.25, ease: 'easeOut' }}
-            />
-
-            {/* 14. Blossom Far Top-Right */}
-            <motion.img
-              key="blossom-2"
-              src="/stickers/flower-2.webp"
-              alt="Blossom Flower"
-              className="absolute top-32 right-4 sm:right-12 w-16 sm:w-22 drop-shadow-sm z-35 transform-gpu"
-              initial={{ scale: 0, rotate: 35, opacity: 0 }}
-              animate={{
-                scale: phase === 'bloomed-motion' ? [1, 1.08, 1] : 1,
-                rotate: phase === 'bloomed-motion' ? [20, 12, 20] : 20,
-                opacity: 1,
-              }}
-              exit={{ scale: 0, opacity: 0, transition: { duration: 0.6, delay: 0.1 } }}
-              transition={{ duration: 1.3, delay: 1.35, ease: 'easeOut' }}
-            />
-
-            {/* 15. Blossom Far Bottom-Left */}
-            <motion.img
-              key="blossom-3"
-              src="/stickers/flower-2.webp"
-              alt="Blossom Flower"
-              className="absolute bottom-32 left-4 sm:left-12 w-16 sm:w-22 drop-shadow-sm z-35 transform-gpu"
-              initial={{ scale: 0, rotate: -25, opacity: 0 }}
-              animate={{
-                scale: phase === 'bloomed-motion' ? [1, 1.08, 1] : 1,
-                rotate: phase === 'bloomed-motion' ? [-15, -8, -15] : -15,
+                rotate: phase === 'bloomed-motion' ? [15, 8, 15] : 12,
                 opacity: 1,
               }}
               exit={{ scale: 0, opacity: 0, transition: { duration: 0.6, delay: 0.05 } }}
-              transition={{ duration: 1.3, delay: 1.45, ease: 'easeOut' }}
+              transition={{ duration: 1.3, delay: 1.05, ease: 'easeOut' }}
             />
 
-            {/* 16. Blossom Far Bottom-Right */}
+            {/* Delicate Accent Flower (Bottom-Center) */}
             <motion.img
-              key="blossom-4"
-              src="/stickers/flower-1.webp"
-              alt="Blossom Flower"
-              className="absolute bottom-32 right-4 sm:right-12 w-16 sm:w-22 drop-shadow-sm z-35 transform-gpu"
-              initial={{ scale: 0, rotate: 25, opacity: 0 }}
+              key="flower-bot-center"
+              src="/stickers/flower-2.webp"
+              alt="Flower"
+              className="absolute bottom-4 left-1/2 -translate-x-1/2 w-16 sm:w-22 drop-shadow-sm z-25 transform-gpu"
+              initial={{ scale: 0, y: 20, opacity: 0 }}
               animate={{
                 scale: phase === 'bloomed-motion' ? [1, 1.08, 1] : 1,
-                rotate: phase === 'bloomed-motion' ? [15, 8, 15] : 15,
+                rotate: phase === 'bloomed-motion' ? [-15, -8, -15] : -12,
                 opacity: 1,
               }}
               exit={{ scale: 0, opacity: 0, transition: { duration: 0.6, delay: 0.05 } }}
-              transition={{ duration: 1.3, delay: 1.55, ease: 'easeOut' }}
+              transition={{ duration: 1.3, delay: 1.15, ease: 'easeOut' }}
             />
 
-            {/* Desktop Additional Accents (Hidden on small mobile to preserve 60fps) */}
-            <motion.img
-              key="blossom-5-desktop"
-              src="/stickers/rose_bear.webp"
-              alt="Rose Bear Acc"
-              className="hidden sm:block absolute top-1/4 left-1/3 w-24 sm:w-32 drop-shadow-md z-30 transform-gpu"
-              initial={{ scale: 0, opacity: 0 }}
-              animate={{
-                scale: phase === 'bloomed-motion' ? [1, 1.05, 1] : 1,
-                opacity: 1,
-              }}
-              exit={{ scale: 0, opacity: 0, transition: { duration: 0.6, delay: 0.1 } }}
-              transition={{ duration: 1.4, delay: 1.65, ease: 'easeOut' }}
-            />
-
-            <motion.img
-              key="blossom-6-desktop"
-              src="/stickers/boquet2.webp"
-              alt="Bouquet Acc"
-              className="hidden sm:block absolute bottom-1/4 right-1/3 w-28 sm:w-36 drop-shadow-md z-30 transform-gpu"
-              initial={{ scale: 0, opacity: 0 }}
-              animate={{
-                scale: phase === 'bloomed-motion' ? [1, 1.05, 1] : 1,
-                opacity: 1,
-              }}
-              exit={{ scale: 0, opacity: 0, transition: { duration: 0.6, delay: 0.08 } }}
-              transition={{ duration: 1.4, delay: 1.75, ease: 'easeOut' }}
-            />
-
-            {/* --- BUTTERFLIES IN FLIGHT --- */}
-            {/* 17. Butterfly Top-Right Quadrant */}
+            {/* --- 5. BUTTERFLIES IN FLIGHT --- */}
+            {/* Butterfly Upper Quadrant */}
             <motion.img
               key="butterfly-1"
               src="/stickers/butterfly.webp"
               alt="Butterfly"
-              className="absolute top-1/3 right-1/4 w-20 sm:w-26 drop-shadow-md z-40 transform-gpu"
-              initial={{ scale: 0, x: 50, y: 50 }}
+              className="absolute top-1/4 right-1/4 w-18 sm:w-26 drop-shadow-md z-40 transform-gpu"
+              initial={{ scale: 0, x: 40, y: 40 }}
               animate={{
                 scale: 1,
                 x: phase === 'bloomed-motion' ? [0, -15, 0] : 0,
-                y: phase === 'bloomed-motion' ? [0, -20, 0] : 0,
+                y: phase === 'bloomed-motion' ? [0, -18, 0] : 0,
                 rotate: phase === 'bloomed-motion' ? [-5, 8, -5] : 5,
               }}
-              exit={{ scale: 0, x: 60, y: -40, opacity: 0, transition: { duration: 0.6 } }}
+              exit={{ scale: 0, x: 50, y: -30, opacity: 0, transition: { duration: 0.6 } }}
               transition={{
-                scale: { duration: 1.4, delay: 1.85 },
+                scale: { duration: 1.3, delay: 1.25 },
                 x: { repeat: Infinity, duration: 2.5, ease: 'easeInOut' },
                 y: { repeat: Infinity, duration: 2.5, ease: 'easeInOut' },
                 rotate: { repeat: Infinity, duration: 2.5, ease: 'easeInOut' },
               }}
             />
 
-            {/* 18. Butterfly Bottom-Left Quadrant */}
+            {/* Butterfly Lower Quadrant */}
             <motion.img
               key="butterfly-2"
               src="/stickers/kupu-kupu.webp"
               alt="Butterfly"
-              className="absolute bottom-1/3 left-1/4 w-16 sm:w-22 drop-shadow-md z-40 transform-gpu"
-              initial={{ scale: 0, x: -50, y: 50 }}
+              className="absolute bottom-1/4 left-1/4 w-16 sm:w-22 drop-shadow-md z-40 transform-gpu"
+              initial={{ scale: 0, x: -40, y: 40 }}
               animate={{
                 scale: 1,
                 x: phase === 'bloomed-motion' ? [0, 15, 0] : 0,
-                y: phase === 'bloomed-motion' ? [0, -18, 0] : 0,
+                y: phase === 'bloomed-motion' ? [0, -16, 0] : 0,
                 rotate: phase === 'bloomed-motion' ? [5, -8, 5] : -5,
               }}
-              exit={{ scale: 0, x: -60, y: -40, opacity: 0, transition: { duration: 0.6, delay: 0.05 } }}
+              exit={{ scale: 0, x: -50, y: -30, opacity: 0, transition: { duration: 0.6, delay: 0.05 } }}
               transition={{
-                scale: { duration: 1.4, delay: 1.95 },
+                scale: { duration: 1.3, delay: 1.35 },
                 x: { repeat: Infinity, duration: 2.5, ease: 'easeInOut' },
                 y: { repeat: Infinity, duration: 2.5, ease: 'easeInOut' },
                 rotate: { repeat: Infinity, duration: 2.5, ease: 'easeInOut' },
               }}
             />
 
-            {/* --- GLOWING ROMANTIC CALLIGRAPHY CUE (Centered & Prominent) --- */}
+            {/* --- 6. GLOWING ROMANTIC CALLIGRAPHY CUE --- */}
             <motion.div
               key="calligraphy-cue"
               className="relative z-45 text-center px-4 max-w-2xl mx-auto transform-gpu"
@@ -488,12 +415,12 @@ export default function FlowerBloomTransition({ onComplete }: FlowerBloomTransit
               }}
               exit={{ opacity: 0, y: -15, scale: 0.95, transition: { duration: 0.6 } }}
               transition={{
-                opacity: { duration: 1.2, delay: 2.05 },
-                y: { duration: 1.2, delay: 2.05 },
+                opacity: { duration: 1.2, delay: 1.45 },
+                y: { duration: 1.2, delay: 1.45 },
                 scale: phase === 'bloomed-motion' ? { repeat: Infinity, duration: 2.5, ease: 'easeInOut' } : undefined,
               }}
             >
-              <p className="font-mono text-[11px] text-amber-200 tracking-[0.35em] uppercase mb-2 drop-shadow-md">
+              <p className="font-mono text-[11px] text-amber-200 tracking-[0.35em] uppercase mb-2 drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)]">
                 ✦ FOR THE SPECIAL ONE ✦
               </p>
               <h2 className="font-script text-4xl sm:text-6xl md:text-7xl text-[#FFF5E1] drop-shadow-[0_12px_30px_rgba(0,0,0,0.95)] leading-tight">

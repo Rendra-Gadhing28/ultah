@@ -1,11 +1,15 @@
 import { motion, useScroll, useTransform } from 'framer-motion';
 import { useRef, useState, useEffect, useCallback } from 'react';
-import { Play, Pause, SkipBack, SkipForward, Camera } from 'lucide-react';
+import { Play, Pause, SkipBack, SkipForward } from 'lucide-react';
 import { sfx } from '../utils/sfx';
+import albumArtImg from '../assets/images/ay-5.webp';
 
 export default function MusicPlayer() {
   const containerRef = useRef<HTMLDivElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
+  const audioCtxRef = useRef<AudioContext | null>(null);
+  const gainNodeRef = useRef<GainNode | null>(null);
+  const sourceNodeRef = useRef<MediaElementAudioSourceNode | null>(null);
 
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
@@ -20,6 +24,40 @@ export default function MusicPlayer() {
   const yHeadphone = useTransform(scrollYProgress, [0, 1], [-20, 30]);
   const yCassette = useTransform(scrollYProgress, [0, 1], [30, -25]);
 
+  // Audio Context Amplifier Setup for Louder, Clearer Volume (2.4x Boost)
+  const setupAudioAmplifier = useCallback(() => {
+    if (!audioRef.current || sourceNodeRef.current) return;
+    try {
+      const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+      if (!AudioCtx) return;
+      const ctx = new AudioCtx();
+      audioCtxRef.current = ctx;
+      const source = ctx.createMediaElementSource(audioRef.current);
+      sourceNodeRef.current = source;
+      const gain = ctx.createGain();
+      gain.gain.value = 2.4; // 240% Volume Boost for powerful acoustic presence
+      gainNodeRef.current = gain;
+      source.connect(gain);
+      gain.connect(ctx.destination);
+    } catch (err) {
+      console.warn('Audio amplifier initialization skipped:', err);
+    }
+  }, []);
+
+  const startAudioPlayback = useCallback(() => {
+    if (!audioRef.current) return;
+    setupAudioAmplifier();
+    if (audioCtxRef.current && audioCtxRef.current.state === 'suspended') {
+      audioCtxRef.current.resume();
+    }
+    audioRef.current.volume = 1.0;
+    audioRef.current.play().then(() => {
+      setIsPlaying(true);
+    }).catch((err) => {
+      console.warn('Playback prevented or file loading:', err);
+    });
+  }, [setupAudioAmplifier]);
+
   const togglePlay = useCallback(() => {
     if (!audioRef.current) return;
     if (isPlaying) {
@@ -28,24 +66,14 @@ export default function MusicPlayer() {
       setIsPlaying(false);
     } else {
       sfx.play('vinyl-scratch');
-      audioRef.current.play().then(() => {
-        setIsPlaying(true);
-      }).catch((err) => {
-        console.warn('Playback prevented or file loading:', err);
-      });
+      startAudioPlayback();
     }
-  }, [isPlaying]);
+  }, [isPlaying, startAudioPlayback]);
 
-  // Global event integration for autoplay on envelope gate and floating pill
+  // Global event integration for instant autoplay on loading completion and gesture fallback
   useEffect(() => {
     const handleGlobalPlay = () => {
-      if (audioRef.current && !isPlaying) {
-        audioRef.current.play().then(() => {
-          setIsPlaying(true);
-        }).catch((err) => {
-          console.warn('Autoplay prevented:', err);
-        });
-      }
+      startAudioPlayback();
     };
 
     const handleGlobalPause = () => {
@@ -63,12 +91,32 @@ export default function MusicPlayer() {
     window.addEventListener('birthday-music:pause', handleGlobalPause);
     window.addEventListener('birthday-music:toggle', handleGlobalToggle);
 
+    // Initial attempt to start playback immediately
+    startAudioPlayback();
+
+    // Fallback: One-time first user gesture (touch/click anywhere) to unlock autoplay
+    const handleFirstGesture = () => {
+      if (!isPlaying) {
+        startAudioPlayback();
+      }
+      window.removeEventListener('pointerdown', handleFirstGesture);
+      window.removeEventListener('touchstart', handleFirstGesture);
+      window.removeEventListener('click', handleFirstGesture);
+    };
+
+    window.addEventListener('pointerdown', handleFirstGesture, { once: true });
+    window.addEventListener('touchstart', handleFirstGesture, { once: true });
+    window.addEventListener('click', handleFirstGesture, { once: true });
+
     return () => {
       window.removeEventListener('birthday-music:play', handleGlobalPlay);
       window.removeEventListener('birthday-music:pause', handleGlobalPause);
       window.removeEventListener('birthday-music:toggle', handleGlobalToggle);
+      window.removeEventListener('pointerdown', handleFirstGesture);
+      window.removeEventListener('touchstart', handleFirstGesture);
+      window.removeEventListener('click', handleFirstGesture);
     };
-  }, [isPlaying, togglePlay]);
+  }, [isPlaying, startAudioPlayback, togglePlay]);
 
   // Broadcast state changes for any floating controller
   useEffect(() => {
@@ -268,30 +316,33 @@ export default function MusicPlayer() {
             </div>
 
             {/* Album Art Area (Top ~6% to 61%) */}
-            <div className="relative w-full aspect-square bg-[#35070e] rounded-2xl overflow-hidden border border-cream/15 shadow-xl flex flex-col items-center justify-center text-center p-4 group">
-              
-              {/* Decorative Romantic Background Texture */}
-              <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_rgba(176,48,60,0.35)_0%,_transparent_75%)] pointer-events-none" />
-              <div className="absolute inset-3 border border-dashed border-cream/20 rounded-xl pointer-events-none" />
+            <div className="relative w-full aspect-square bg-[#35070e] rounded-2xl overflow-hidden border border-cream/20 shadow-xl flex flex-col items-center justify-center text-center group">
+              {/* Authentic Photo of Ayudya as Album Cover */}
+              <img
+                src={albumArtImg}
+                alt="Ayudya - Until I Found You"
+                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+              />
 
-              {/* Camera Icon & Handwritten Text */}
-              <div className="relative z-10 flex flex-col items-center">
-                <div className="w-14 h-14 rounded-full bg-cream/10 border border-cream/20 flex items-center justify-center mb-3 shadow-inner group-hover:scale-105 transition-transform">
-                  <Camera className="w-7 h-7 text-cream/80" />
-                </div>
-                <p className="font-script text-2xl sm:text-3xl text-cream font-medium tracking-wide">
-                  foto kamu di sini
+              {/* Decorative Romantic Overlay Vignette */}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/20 pointer-events-none" />
+              <div className="absolute inset-2.5 border border-dashed border-white/25 rounded-xl pointer-events-none" />
+
+              {/* Bottom Memory Tag inside album */}
+              <div className="absolute bottom-2.5 left-3 z-10 text-left pointer-events-none">
+                <p className="font-script text-lg sm:text-xl text-cream font-medium leading-none drop-shadow-md">
+                  For Ayudya ♡
                 </p>
-                <p className="font-mono text-[9px] text-dark-cream/70 tracking-widest uppercase mt-1">
-                  Our Special Memory
+                <p className="font-mono text-[8px] text-white/80 tracking-widest uppercase mt-0.5">
+                  Our Special Melody
                 </p>
               </div>
 
-              {/* Subtle spinning vinyl watermark when playing */}
+              {/* Live Audio Visualizer Pill when playing */}
               {isPlaying && (
-                <div className="absolute bottom-2 right-2 flex items-center gap-1 bg-black/40 px-2 py-0.5 rounded-full">
+                <div className="absolute top-2.5 right-2.5 flex items-center gap-1 bg-black/60 backdrop-blur-xs px-2 py-0.5 rounded-full border border-white/15">
                   <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
-                  <span className="font-mono text-[8px] text-cream/90 uppercase tracking-widest">Live</span>
+                  <span className="font-mono text-[8px] text-cream/90 uppercase tracking-widest">Playing</span>
                 </div>
               )}
             </div>

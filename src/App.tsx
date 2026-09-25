@@ -78,7 +78,15 @@ export default function App() {
   return (
     <>
       <AnimatePresence>
-        {isLoading && <Preloader onComplete={() => setIsLoading(false)} key="preloader" />}
+        {isLoading && (
+          <Preloader 
+            onComplete={() => {
+              setIsLoading(false);
+              window.dispatchEvent(new CustomEvent('birthday-music:play'));
+            }} 
+            key="preloader" 
+          />
+        )}
       </AnimatePresence>
 
       <AnimatePresence>

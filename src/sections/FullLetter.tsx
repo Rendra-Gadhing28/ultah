@@ -136,29 +136,54 @@ export default function FullLetter() {
         className="absolute -top-16 -right-16 md:-right-32 w-[90%] md:w-[60%] max-w-4xl opacity-15 mix-blend-screen pointer-events-none select-none z-0"
       />
 
-      {/* Top Left Polaroid with Name */}
+      {/* TOP LEFT POLAROID (Style E: Scrapbook Stamp Reveal - Safely positioned outside mobile canvas) */}
       <motion.div 
-        className="absolute top-10 left-6 md:left-24 w-44 md:w-56 z-20 drop-shadow-2xl"
-        initial={{ opacity: 0, scale: 0.8, rotate: -8 }}
-        whileInView={{ opacity: 1, scale: 1, rotate: -8 }}
-        viewport={{ once: true }}
-        transition={{ duration: 0.8 }}
+        className="hidden lg:block absolute top-12 left-8 xl:left-24 w-44 xl:w-52 z-10 drop-shadow-2xl pointer-events-none select-none"
+        initial={{ opacity: 0, y: -60, scale: 1.25, rotate: -14 }}
+        whileInView={{ opacity: 1, y: 0, scale: 1, rotate: -8 }}
+        viewport={{ once: true, margin: "-10%" }}
+        transition={{ duration: 1.1, type: "spring", stiffness: 120, damping: 14 }}
+        onAnimationStart={() => {
+          setTimeout(() => sfx.play('camera-shutter'), 200);
+          setTimeout(() => sfx.play('paper-slide'), 600);
+        }}
       >
-        <div className="bg-[#4A0E17] p-3 pb-8 shadow-xl rounded-sm border border-white/10">
-          <div className="w-full aspect-square bg-burgundy/30 overflow-hidden relative rounded-xs">
-            <img src={ayud2Photo} alt={DATA.receiver} className="w-full h-full object-cover" />
+        <div className="bg-[#4A0E17] p-3 pb-8 shadow-2xl rounded-xs border border-white/15 relative overflow-hidden group">
+          {/* Subtle Flash Overlay on Stamp Drop */}
+          <motion.div
+            className="absolute inset-0 bg-white pointer-events-none z-30"
+            initial={{ opacity: 0.8 }}
+            animate={{ opacity: 0 }}
+            transition={{ duration: 0.6, delay: 0.2 }}
+          />
+
+          {/* Photo Window */}
+          <div className="w-full aspect-square bg-burgundy/30 overflow-hidden relative rounded-xs border border-black/30 shadow-inner">
+            <img 
+              src={ayud2Photo} 
+              alt={DATA.receiver} 
+              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent pointer-events-none" />
           </div>
-          <p className="font-script text-xl text-center text-cream mt-2 tracking-wide">
+
+          <p className="font-script text-xl text-center text-cream mt-2 tracking-wide font-medium">
             {DATA.receiver.split(' ')[0]}.
           </p>
+
+          {/* 4 Washi Tape Corner Accents */}
+          <div className="absolute -top-2 -left-3 w-12 h-4 bg-amber-100/75 border border-amber-200/50 shadow-xs -rotate-45 pointer-events-none z-20" />
+          <div className="absolute -top-2 -right-3 w-12 h-4 bg-amber-100/75 border border-amber-200/50 shadow-xs rotate-45 pointer-events-none z-20" />
+          <div className="absolute -bottom-2 -left-3 w-12 h-4 bg-amber-100/75 border border-amber-200/50 shadow-xs rotate-45 pointer-events-none z-20" />
+          <div className="absolute -bottom-2 -right-3 w-12 h-4 bg-amber-100/75 border border-amber-200/50 shadow-xs -rotate-45 pointer-events-none z-20" />
         </div>
       </motion.div>
 
-      {/* Butterfly fluttering near the polaroid */}
+      {/* Butterfly fluttering near top-left */}
       <motion.img 
         src="/stickers/butterfly.webp" 
         alt="Butterfly" 
-        className="absolute top-72 left-8 md:left-28 w-20 md:w-28 drop-shadow-xl z-30 pointer-events-none"
+        className="hidden lg:block absolute top-72 left-8 xl:left-28 w-20 xl:w-24 drop-shadow-xl z-10 pointer-events-none"
         initial={{ opacity: 0, scale: 0 }}
         whileInView={{ opacity: 1, scale: 1 }}
         viewport={{ once: true }}
@@ -166,18 +191,33 @@ export default function FullLetter() {
         transition={{ repeat: Infinity, duration: 4.5, ease: "easeInOut" }}
       />
 
-      {/* Bottom Right Mini Stamp Photo */}
+      {/* BOTTOM RIGHT MINI STAMP PHOTO (Safely positioned on desktop without obstructing mobile letter) */}
       <motion.div 
-        className="absolute bottom-20 right-6 md:right-24 w-36 md:w-48 z-20 drop-shadow-2xl"
-        initial={{ opacity: 0, scale: 0.8, rotate: 8 }}
-        whileInView={{ opacity: 1, scale: 1, rotate: 8 }}
-        viewport={{ once: true }}
-        transition={{ duration: 0.8, delay: 0.2 }}
+        className="hidden lg:block absolute bottom-20 right-8 xl:right-24 w-36 xl:w-44 z-10 drop-shadow-2xl pointer-events-none select-none"
+        initial={{ opacity: 0, y: -45, scale: 1.2, rotate: 14 }}
+        whileInView={{ opacity: 1, y: 0, scale: 1, rotate: 8 }}
+        viewport={{ once: true, margin: "-5%" }}
+        transition={{ duration: 1.0, type: "spring", stiffness: 130, damping: 14, delay: 0.2 }}
+        onAnimationStart={() => {
+          setTimeout(() => sfx.play('camera-shutter'), 300);
+        }}
       >
-        <div className="bg-cream p-2 pb-5 shadow-xl rounded-sm border-2 border-dashed border-burgundy/30">
-          <div className="w-full aspect-square bg-burgundy/10 overflow-hidden relative">
-            <img src={ay4Photo} alt="Special Memory" className="w-full h-full object-cover" />
+        <div className="bg-cream p-2 pb-5 shadow-2xl rounded-xs border-2 border-dashed border-burgundy/30 relative group">
+          {/* Washi Tape Strip on Top */}
+          <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-16 h-5 bg-amber-100/80 border-b border-amber-200/60 rotate-1 shadow-xs pointer-events-none z-10" />
+
+          <div className="w-full aspect-square bg-burgundy/10 overflow-hidden relative rounded-2xs border border-black/15 shadow-inner">
+            <img 
+              src={ay4Photo} 
+              alt="Special Memory" 
+              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/35 via-transparent to-transparent pointer-events-none" />
           </div>
+
+          <p className="font-mono text-[9px] text-center text-burgundy/60 uppercase tracking-widest mt-2">
+            28.01.2027 · Special Memory
+          </p>
         </div>
       </motion.div>
 
@@ -249,16 +289,16 @@ export default function FullLetter() {
               }}
             >
               {/* Inner dashed border simulating torn paper edge overlay */}
-              <div className="w-full min-h-[460px] border-2 border-dashed border-burgundy/20 p-8 md:p-12 bg-white/50 backdrop-blur-sm relative overflow-hidden flex flex-col justify-between">
+              <div className="w-full min-h-[460px] border-2 border-dashed border-burgundy/20 p-5 sm:p-8 md:p-12 bg-white/60 backdrop-blur-xs relative overflow-hidden flex flex-col justify-between">
                 
                 {/* Paper texture overlay */}
                 <img src="/stickers/letter_paper.webp" className="absolute inset-0 w-full h-full object-cover mix-blend-multiply opacity-20 pointer-events-none" />
 
-                {/* Flower Branch Framing (Bottom Left) */}
+                {/* Flower Branch Framing (Bottom Left - subtle background so text stays 100% readable) */}
                 <motion.img 
                   src="/stickers/flower_branch_2.webp" 
                   alt="Flower Branch"
-                  className="absolute -bottom-10 -left-10 md:-bottom-16 md:-left-16 w-56 md:w-72 z-0 opacity-80 mix-blend-multiply pointer-events-none"
+                  className="absolute -bottom-16 -left-16 sm:-bottom-20 sm:-left-20 w-44 sm:w-60 md:w-72 z-0 opacity-25 md:opacity-35 mix-blend-multiply pointer-events-none"
                   initial={{ rotate: -15 }}
                   animate={{ rotate: [-15, -14, -16, -15] }}
                   transition={{ repeat: Infinity, duration: 8, ease: "easeInOut" }}

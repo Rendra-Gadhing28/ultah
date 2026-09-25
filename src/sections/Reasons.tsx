@@ -1,14 +1,20 @@
 import { DATA } from '../utils/constants';
 import { motion, useScroll, useTransform } from 'framer-motion';
-import { useRef, useState, useEffect } from 'react';
+import { useRef, useState, useEffect, useCallback } from 'react';
+import { Download, Camera, Check, Loader2, Upload, RefreshCw } from 'lucide-react';
 import { sfx } from '../utils/sfx';
+import ImageCropModal from '../components/ImageCropModal';
 
 function StripFrame({
   reason,
   index,
+  currentImg,
+  onTriggerCrop,
 }: {
   reason: { id: number; title: string; text: string; img: string };
   index: number;
+  currentImg: string;
+  onTriggerCrop: (frameIndex: number) => void;
 }) {
   const [isFlipped, setIsFlipped] = useState(false);
   const [darkroomPhase, setDarkroomPhase] = useState<'initial' | 'developing' | 'revealed'>('initial');
@@ -40,7 +46,7 @@ function StripFrame({
   }, [isFlipped]);
 
   return (
-    <div 
+    <div
       className="w-full aspect-square relative cursor-pointer select-none group focus:outline-hidden focus:ring-2 focus:ring-cream/50 rounded-xs"
       style={{ perspective: 1000 }}
       onClick={handleClick}
@@ -49,22 +55,22 @@ function StripFrame({
       role="button"
       aria-label={`Frame ${index + 1}: ${reason.title}. Klik untuk membalik.`}
     >
-      <div 
+      <div
         className="w-full h-full relative transition-transform duration-700 ease-out"
-        style={{ 
-          transformStyle: 'preserve-3d', 
-          transform: isFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)' 
+        style={{
+          transformStyle: 'preserve-3d',
+          transform: isFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)',
         }}
       >
         {/* Front Photo (Style A: Vintage Darkroom Reveal) */}
-        <div 
+        <div
           className="absolute inset-0 bg-[#140507] rounded-xs overflow-hidden border border-black/25 shadow-inner flex items-center justify-center"
           style={{ backfaceVisibility: 'hidden' }}
         >
-          <motion.img 
-            src={reason.img} 
-            alt={reason.title} 
-            className="w-full h-full object-cover filter contrast-[1.05] brightness-95 group-hover:scale-105 transition-transform duration-500" 
+          <motion.img
+            src={currentImg}
+            alt={reason.title}
+            className="w-full h-full object-cover filter contrast-[1.05] brightness-95 group-hover:scale-105 transition-transform duration-500"
             loading="lazy"
             animate={{
               filter:
@@ -93,15 +99,29 @@ function StripFrame({
 
           {/* Subtle warm vignette */}
           <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/20 pointer-events-none" />
-          
+
           {/* Top Left Number Stamp */}
           <div className="absolute top-2.5 left-2.5 bg-black/65 backdrop-blur-xs px-2 py-0.5 rounded text-[10px] font-mono text-cream/90 tracking-wider">
             #{String(index + 1).padStart(2, '0')}
           </div>
 
+          {/* Change / Crop Photo Button on Frame */}
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onTriggerCrop(index);
+            }}
+            className="absolute top-2.5 right-2.5 bg-black/75 hover:bg-[#5E0F1A] text-amber-200 px-2 py-0.5 rounded-xs border border-amber-300/40 text-[9px] font-mono tracking-wider uppercase transition-all flex items-center gap-1 shadow-md cursor-pointer z-20"
+            title="Ganti / Crop foto frame ini"
+          >
+            <Camera className="w-3 h-3 text-amber-300" />
+            <span>Ganti</span>
+          </button>
+
           {/* Developing Indicator Badge */}
           {darkroomPhase === 'developing' && (
-            <div className="absolute top-2.5 right-2.5 bg-black/75 px-1.5 py-0.5 rounded-xs border border-amber-400/50">
+            <div className="absolute bottom-2.5 left-2.5 bg-black/75 px-1.5 py-0.5 rounded-xs border border-amber-400/50">
               <span className="font-mono text-[8px] text-amber-300 animate-pulse tracking-widest uppercase">
                 ● Developing
               </span>
@@ -116,13 +136,13 @@ function StripFrame({
         </div>
 
         {/* Back Reason Note */}
-        <div 
+        <div
           className="absolute inset-0 bg-[#2d050a] text-cream p-5 rounded-xs border border-amber-200/20 shadow-inner flex flex-col justify-between text-center overflow-hidden"
           style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}
         >
           {/* Paper texture overlay & inner dashed border */}
           <div className="absolute inset-2 border border-dashed border-cream/20 rounded-xs pointer-events-none" />
-          
+
           <div className="relative z-10 pt-2">
             <span className="font-mono text-[10px] text-amber-200/80 tracking-widest uppercase">
               {reason.title}
@@ -148,14 +168,29 @@ function StripFrame({
 
 export default function Reasons() {
   const containerRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const headerPlayedRef = useRef(false);
+
+  // 3-Frame Reasons Data
+  const displayedReasons = DATA.reasons.slice(0, 3);
+  const defaultImages = [DATA.reasons[0].img, DATA.reasons[1].img, DATA.reasons[2].img];
+
+  // Client-side Custom Cropped Photos state (3 frames)
+  const [photos, setPhotos] = useState<string[]>(defaultImages);
+  const [downloadStatus, setDownloadStatus] = useState<'idle' | 'loading' | 'success'>('idle');
+  const [isPrinting, setIsPrinting] = useState(false);
+
+  // Crop Modal state
+  const [cropModalOpen, setCropModalOpen] = useState(false);
+  const [selectedFileSrc, setSelectedFileSrc] = useState<string | null>(null);
+  const [activeFrameForCrop, setActiveFrameForCrop] = useState<number>(0);
 
   const { scrollYProgress } = useScroll({
     target: containerRef,
-    offset: ["start end", "end start"],
+    offset: ['start end', 'end start'],
   });
 
-  // Parallax offsets tailored for each sticker element
+  // Parallax offsets tailored for sticker elements
   const yKoran = useTransform(scrollYProgress, [0, 1], [-80, 120]);
   const yKiss = useTransform(scrollYProgress, [0, 1], [-40, 80]);
   const yWax = useTransform(scrollYProgress, [0, 1], [-30, 90]);
@@ -166,18 +201,222 @@ export default function Reasons() {
   const yStamp = useTransform(scrollYProgress, [0, 1], [110, -110]);
   const yRedStar = useTransform(scrollYProgress, [0, 1], [50, -50]);
   const yLetter = useTransform(scrollYProgress, [0, 1], [80, -40]);
-  const yStarTop = useTransform(scrollYProgress, [0, 1], [20, -60]);
+
+  // Open file picker for a specific frame index
+  const handleTriggerCrop = (frameIndex: number) => {
+    sfx.play('click');
+    setActiveFrameForCrop(frameIndex);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+      fileInputRef.current.click();
+    }
+  };
+
+  // Handle file selected from device
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      setSelectedFileSrc(reader.result as string);
+      setCropModalOpen(true);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  // Crop completed from modal
+  const handleCropComplete = (croppedDataUrl: string, frameIdx: number) => {
+    setPhotos((prev) => {
+      const next = [...prev];
+      next[frameIdx] = croppedDataUrl;
+      return next;
+    });
+    setCropModalOpen(false);
+    setSelectedFileSrc(null);
+
+    // Trigger Camera Ejection Printing Animation
+    setIsPrinting(true);
+    sfx.play('camera-shutter');
+    setTimeout(() => {
+      setIsPrinting(false);
+    }, 1200);
+  };
+
+  // Reset to original default photos
+  const handleResetPhotos = () => {
+    sfx.play('click');
+    setPhotos(defaultImages);
+  };
+
+  // Native High-DPI Canvas Generator (Super-sharp 300 DPI 3-Frame Photobooth Export)
+  const handleDownloadPhotostrip = useCallback(async () => {
+    if (downloadStatus === 'loading') return;
+    setDownloadStatus('loading');
+    sfx.play('click');
+
+    try {
+      const canvas = document.createElement('canvas');
+      const width = 900;
+      const padding = 45;
+      const frameGap = 35;
+      const photoWidth = width - padding * 2;
+      const photoHeight = photoWidth; // 1:1 square photo aspect
+      const topMargin = 60;
+      const bottomHeight = 320;
+      const totalHeight = topMargin + 3 * photoHeight + 2 * frameGap + bottomHeight;
+
+      canvas.width = width;
+      canvas.height = totalHeight;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) throw new Error('Canvas context unavailable');
+
+      // 1. Photobooth Paper Background
+      ctx.fillStyle = '#FAF8F5';
+      ctx.fillRect(0, 0, width, totalHeight);
+
+      // Subtle Outer Paper Border
+      ctx.strokeStyle = '#E2D8C3';
+      ctx.lineWidth = 4;
+      ctx.strokeRect(2, 2, width - 4, totalHeight - 4);
+
+      // Top Ejection Slot
+      ctx.fillStyle = 'rgba(26, 26, 26, 0.15)';
+      ctx.beginPath();
+      ctx.roundRect(padding, 25, photoWidth, 8, 4);
+      ctx.fill();
+
+      // 2. Load all 3 photos (custom or default) in parallel
+      const loadImg = (src: string): Promise<HTMLImageElement> =>
+        new Promise((resolve, reject) => {
+          const img = new Image();
+          img.crossOrigin = 'anonymous';
+          img.onload = () => resolve(img);
+          img.onerror = reject;
+          img.src = src;
+        });
+
+      const loadedImages = await Promise.all(photos.map((src) => loadImg(src)));
+
+      // 3. Render Each 1:1 Photo Frame
+      loadedImages.forEach((img, i) => {
+        const y = topMargin + i * (photoHeight + frameGap);
+
+        // Frame Shadow / Border
+        ctx.fillStyle = '#140507';
+        ctx.fillRect(padding - 4, y - 4, photoWidth + 8, photoHeight + 8);
+
+        // Draw Image with center-crop
+        const imgAspect = img.width / img.height;
+        let sX = 0,
+          sY = 0,
+          sW = img.width,
+          sH = img.height;
+        if (imgAspect > 1) {
+          sW = img.height;
+          sX = (img.width - sW) / 2;
+        } else {
+          sH = img.width;
+          sY = (img.height - sH) / 2;
+        }
+
+        ctx.drawImage(img, sX, sY, sW, sH, padding, y, photoWidth, photoHeight);
+
+        // Top Left Frame Number Badge (#01 - #03)
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.65)';
+        ctx.beginPath();
+        ctx.roundRect(padding + 16, y + 16, 75, 36, 6);
+        ctx.fill();
+
+        ctx.fillStyle = '#FFF5E1';
+        ctx.font = 'bold 20px "Courier Prime", monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText(`#0${i + 1}`, padding + 53, y + 41);
+      });
+
+      // 4. Bottom Margin Typography
+      const footerY = topMargin + 3 * (photoHeight + frameGap) + 30;
+
+      // Divider Line
+      ctx.strokeStyle = 'rgba(0, 0, 0, 0.15)';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(padding, footerY);
+      ctx.lineTo(width - padding, footerY);
+      ctx.stroke();
+
+      // Script Title
+      ctx.textAlign = 'center';
+      ctx.fillStyle = '#800020';
+      ctx.font = 'bold 54px "Caveat", cursive';
+      ctx.fillText("reasons why you're my favorite", width / 2, footerY + 75);
+
+      // Monospace Metadata Line
+      ctx.font = 'bold 22px "Courier Prime", monospace';
+      ctx.fillStyle = 'rgba(128, 0, 32, 0.7)';
+      ctx.fillText('N° 280127-18  •  28 · 01 · 2027  •  Ayudya & Rendra', width / 2, footerY + 135);
+
+      // Sub-footer Tag
+      ctx.fillStyle = '#9B1D30';
+      ctx.font = 'bold 20px "Courier Prime", monospace';
+      ctx.fillText('FOREVER FAVORITE PHOTOSTRIP', width / 2, footerY + 185);
+
+      // 5. Trigger High-DPI Download
+      canvas.toBlob((blob) => {
+        if (!blob) throw new Error('Blob generation failed');
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = 'photostrip-ayudya-18th.png';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+
+        sfx.play('camera-shutter');
+        setDownloadStatus('success');
+        setTimeout(() => setDownloadStatus('idle'), 3500);
+      }, 'image/png', 1.0);
+    } catch (err) {
+      console.error('Failed to generate photostrip canvas:', err);
+      setDownloadStatus('idle');
+    }
+  }, [downloadStatus, photos]);
+
+  const hasCustomPhotos = photos.some((p, i) => p !== defaultImages[i]);
 
   return (
-    <section 
+    <section
       ref={containerRef}
       className="relative w-full py-28 md:py-36 overflow-hidden border-y border-black/40"
       style={{
         backgroundColor: '#38070F',
-        backgroundImage: 'radial-gradient(circle at 50% 30%, rgba(185, 28, 48, 0.28) 0%, transparent 70%), radial-gradient(#1f0307 22%, transparent 23%)',
-        backgroundSize: '100% 100%, 7px 7px'
+        backgroundImage:
+          'radial-gradient(circle at 50% 30%, rgba(185, 28, 48, 0.28) 0%, transparent 70%), radial-gradient(#1f0307 22%, transparent 23%)',
+        backgroundSize: '100% 100%, 7px 7px',
       }}
     >
+      {/* Hidden File Input for Device Image Selection */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        onChange={handleFileChange}
+        className="hidden"
+      />
+
+      {/* Interactive 1:1 Crop Modal */}
+      <ImageCropModal
+        isOpen={cropModalOpen}
+        imageSrc={selectedFileSrc}
+        frameIndex={activeFrameForCrop}
+        onCropComplete={handleCropComplete}
+        onClose={() => {
+          setCropModalOpen(false);
+          setSelectedFileSrc(null);
+        }}
+      />
+
       {/* Full-bleed Parallax Curve Background */}
       <motion.img
         src="/parallax/burgundy_curve.webp"
@@ -187,9 +426,8 @@ export default function Reasons() {
       />
 
       <div className="max-w-5xl mx-auto px-4 sm:px-6 relative">
-        
         {/* Section Header */}
-        <motion.div 
+        <motion.div
           className="text-center mb-12 sm:mb-16 relative z-30"
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -202,60 +440,51 @@ export default function Reasons() {
             }
           }}
         >
-          <p className="font-mono text-cream/70 text-xs sm:text-sm uppercase tracking-widest mb-3">
-            ✦ Scrapbook Photostrip · Chapter 02 ✦
+          <p className="font-mono text-xs uppercase tracking-widest text-amber-300/80 mb-2">
+            ✦ Chapter 05 · Photobooth Strip ✦
           </p>
-          <h2 className="font-serif text-4xl sm:text-5xl md:text-6xl text-cream italic tracking-wide">
-            "Reason Why I Love You"
+          <h2 className="font-serif text-4xl sm:text-5xl md:text-6xl text-cream italic leading-tight">
+            "Reasons why you're my favorite"
           </h2>
-          <p className="font-mono text-cream/60 text-xs mt-3">
-            [ 6 Bingkai Cerita · Ketuk tiap foto untuk membaca ]
+          <p className="font-mono text-cream/70 text-xs sm:text-sm max-w-lg mx-auto mt-3">
+            3 bingkai cerita kenangan kita. Kamu bisa mengganti & menyesuaikan foto di strip ini secara langsung.
           </p>
         </motion.div>
 
-        {/* Central Photobooth Composition */}
-        <div className="relative w-full max-w-xl mx-auto flex flex-col items-center">
-          
-          {/* Top Right: Glass Star */}
-          <motion.div 
-            style={{ y: yStarTop }}
-            className="absolute -top-10 right-2 sm:right-6 md:right-10 z-40 pointer-events-none"
-            animate={{ rotate: [0, 8, -6, 0] }}
-            transition={{ repeat: Infinity, duration: 6, ease: "easeInOut" }}
-          >
-            <svg viewBox="0 0 100 100" className="w-12 sm:w-16 h-12 sm:h-16 drop-shadow-[0_4px_12px_rgba(255,255,255,0.45)]">
-              <polygon points="50,5 63,38 98,38 69,59 82,92 50,70 18,92 31,59 2,38 37,38" fill="rgba(255,255,255,0.9)" stroke="rgba(255,255,255,0.95)" strokeWidth="2" />
-            </svg>
-          </motion.div>
-
-          {/* Left Collage 1: Rolled Torn Newspaper Scrap */}
-          <motion.img 
-            src="/stickers/koran.webp" 
-            alt="Torn Newspaper"
-            style={{ y: yKoran, rotate: -4 }}
-            className="absolute top-36 sm:top-44 -left-16 sm:-left-28 md:-left-40 w-44 sm:w-56 md:w-68 z-10 drop-shadow-2xl pointer-events-none select-none"
+        {/* Central Photobooth Stage */}
+        <div className="relative flex flex-col items-center justify-center">
+          {/* Parallax Scrapbook Stickers */}
+          {/* Left Collage 1: Vintage Newspaper Clipping */}
+          <motion.img
+            src="/stickers/koran.webp"
+            alt="Newspaper Clipping"
+            style={{ y: yKoran, rotate: -8 }}
+            className="absolute top-20 sm:top-28 -left-12 sm:-left-20 md:-left-28 w-32 sm:w-44 md:w-52 z-10 pointer-events-none select-none drop-shadow-xl opacity-90"
           />
 
           {/* Left Collage 2: Red Kiss Lipstick Mark */}
-          <motion.div 
+          <motion.div
             style={{ y: yKiss, rotate: -14 }}
             className="absolute top-[380px] sm:top-[440px] -left-6 sm:-left-12 z-30 pointer-events-none select-none"
           >
             <svg viewBox="0 0 100 65" className="w-16 sm:w-20 h-11 sm:h-14 drop-shadow-lg fill-[#c4142d]">
-              <path d="M10,32 C20,15 35,12 48,22 C52,22 65,12 80,15 C92,18 95,28 92,34 C85,38 75,34 68,36 C58,38 52,44 48,44 C44,44 38,38 28,36 C21,34 15,38 10,32 Z M14,35 C22,48 35,58 48,58 C62,58 75,48 84,35 C75,44 62,48 48,48 C35,48 22,44 14,35 Z" opacity="0.95" />
+              <path
+                d="M10,32 C20,15 35,12 48,22 C52,22 65,12 80,15 C92,18 95,28 92,34 C85,38 75,34 68,36 C58,38 52,44 48,44 C44,44 38,38 28,36 C21,34 15,38 10,32 Z M14,35 C22,48 35,58 48,58 C62,58 75,48 84,35 C75,44 62,48 48,48 C35,48 22,44 14,35 Z"
+                opacity="0.95"
+              />
             </svg>
           </motion.div>
 
-          {/* Left Collage 3: Cassette Tape mid-way down the 6-frame strip */}
-          <motion.img 
-            src="/stickers/cassette.webp" 
+          {/* Left Collage 3: Cassette Tape */}
+          <motion.img
+            src="/stickers/cassette.webp"
             alt="Cassette Tape"
             style={{ y: yCassette, rotate: -14 }}
-            className="absolute top-[960px] sm:top-[1120px] -left-16 sm:-left-24 md:-left-36 w-36 sm:w-44 md:w-52 z-25 drop-shadow-xl pointer-events-none select-none"
+            className="absolute top-[800px] sm:top-[920px] -left-16 sm:-left-24 md:-left-36 w-36 sm:w-44 md:w-52 z-25 drop-shadow-xl pointer-events-none select-none"
           />
 
-          {/* Left Collage 4: Red Star Sticker above bottom envelope */}
-          <motion.div 
+          {/* Left Collage 4: Red Star Sticker */}
+          <motion.div
             style={{ y: yRedStar, rotate: -15 }}
             className="absolute bottom-48 sm:bottom-60 -left-10 sm:-left-16 md:-left-20 z-10 pointer-events-none select-none"
           >
@@ -265,7 +494,7 @@ export default function Reasons() {
           </motion.div>
 
           {/* Right Collage 1: Wax Seal on Postcard */}
-          <motion.div 
+          <motion.div
             style={{ y: yWax, rotate: 8 }}
             className="absolute top-40 sm:top-48 -right-10 sm:-right-16 md:-right-24 z-25 pointer-events-none"
           >
@@ -274,71 +503,62 @@ export default function Reasons() {
                 <p className="font-mono text-[7px] text-dark-burgundy/60 uppercase">Post Card</p>
                 <div className="w-4 h-5 border border-dashed border-dark-burgundy/40 ml-auto mt-1" />
               </div>
-              <img 
-                src="/stickers/wax_seal.webp" 
-                alt="Wax Seal" 
-                className="w-20 sm:w-24 md:w-28 drop-shadow-xl relative z-10" 
+              <img
+                src="/stickers/wax_seal.webp"
+                alt="Wax Seal"
+                className="w-20 sm:w-24 md:w-28 drop-shadow-xl relative z-10"
               />
             </div>
           </motion.div>
 
-          {/* Right Collage 2: Vinyl Record (Rotating behind the strip) */}
-          <motion.div 
+          {/* Right Collage 2: Vinyl Record */}
+          <motion.div
             style={{ y: yVinyl }}
-            className="absolute top-[480px] sm:top-[560px] -right-18 sm:-right-28 md:-right-36 w-48 sm:w-60 md:w-72 z-10 pointer-events-none"
+            className="absolute top-[420px] sm:top-[480px] -right-18 sm:-right-28 md:-right-36 w-48 sm:w-60 md:w-72 z-10 pointer-events-none"
           >
-            <motion.img 
-              src="/stickers/vinyl.webp" 
-              alt="Vinyl Record" 
+            <motion.img
+              src="/stickers/vinyl.webp"
+              alt="Vinyl Record"
               className="w-full h-full rounded-full drop-shadow-2xl"
               animate={{ rotate: 360 }}
-              transition={{ repeat: Infinity, duration: 18, ease: "linear" }}
+              transition={{ repeat: Infinity, duration: 18, ease: 'linear' }}
             />
           </motion.div>
 
-          {/* Right Collage 3: Mini Vintage Camera on the Vinyl border */}
-          <motion.img 
-            src="/stickers/camera_leica.webp" 
-            alt="Mini Camera" 
+          {/* Right Collage 3: Mini Vintage Camera */}
+          <motion.img
+            src="/stickers/camera_leica.webp"
+            alt="Mini Camera"
             style={{ y: yMiniCam, rotate: 12 }}
-            className="absolute top-[590px] sm:top-[690px] right-2 sm:right-6 z-25 w-14 sm:w-18 drop-shadow-xl pointer-events-none select-none"
+            className="absolute top-[520px] sm:top-[600px] right-2 sm:right-6 z-25 w-14 sm:w-18 drop-shadow-xl pointer-events-none select-none"
           />
 
-          {/* Right Collage 4: Handwritten Script Cutout */}
-          <motion.div 
-            style={{ y: yQuote, rotate: -6 }}
-            className="absolute top-[700px] sm:top-[820px] -right-12 sm:-right-20 md:-right-28 z-20 pointer-events-none bg-cream/90 px-3 py-1.5 shadow-md border border-dark-cream rounded-xs max-w-[130px] sm:max-w-[150px] text-center"
-          >
-            <p className="font-script text-base sm:text-lg text-burgundy leading-tight">
-              "we loved with a love that was more than love"
-            </p>
-          </motion.div>
-
-          {/* Right Collage 5: Postage Stamp Lower-Right */}
-          <motion.img 
-            src="/stickers/stamp.webp" 
+          {/* Right Collage 4: Postage Stamp Lower-Right */}
+          <motion.img
+            src="/stickers/stamp.webp"
             alt="Postage Stamp"
             style={{ y: yStamp, rotate: 10 }}
-            className="absolute top-[1250px] sm:top-[1400px] -right-10 sm:-right-18 md:-right-24 w-28 sm:w-36 md:w-40 z-20 drop-shadow-lg pointer-events-none select-none"
+            className="absolute top-[900px] sm:top-[1050px] -right-10 sm:-right-18 md:-right-24 w-28 sm:w-36 md:w-40 z-20 drop-shadow-lg pointer-events-none select-none"
           />
 
-          {/* 1. Polaroid Camera on Top */}
-          <motion.div 
+          {/* 1. Polaroid Camera on Top (With Print Ejection Reaction) */}
+          <motion.div
             className="relative z-30 flex flex-col items-center"
             initial={{ y: -40, opacity: 0 }}
             whileInView={{ y: 0, opacity: 1 }}
             viewport={{ once: true }}
             transition={{ duration: 0.8, type: 'spring' }}
+            animate={isPrinting ? { y: [-6, 2, 0], scale: [1, 1.03, 1] } : {}}
           >
-            <img 
-              src="/stickers/kamera.webp" 
-              alt="Polaroid OneStep 2" 
-              className="w-64 sm:w-76 md:w-84 drop-shadow-[0_22px_38px_rgba(0,0,0,0.85)] select-none pointer-events-none" 
+            <img
+              src="/stickers/kamera.webp"
+              alt="Polaroid OneStep 2"
+              className="w-64 sm:w-76 md:w-84 drop-shadow-[0_22px_38px_rgba(0,0,0,0.85)] select-none pointer-events-none"
             />
           </motion.div>
 
-          {/* 2. The 6-Frame Photobooth Strip (Ejected from camera slot) */}
-          <motion.div 
+          {/* 2. The 3-Frame Photobooth Strip (Ejected from camera slot) */}
+          <motion.div
             className="relative z-20 -mt-8 sm:-mt-10 w-[280px] sm:w-[320px] md:w-[340px] bg-[#FAF8F5] p-3.5 sm:p-4 rounded-b-sm shadow-[0_30px_70px_-15px_rgba(0,0,0,0.85)] border border-[#e2d8c3]"
             initial={{ scaleY: 0.95, opacity: 0 }}
             whileInView={{ scaleY: 1, opacity: 1 }}
@@ -348,10 +568,16 @@ export default function Reasons() {
             {/* Top slot cutout look where the film emerged */}
             <div className="w-full h-1 bg-[#1a1a1a]/15 rounded-full mb-3" />
 
-            {/* 6 Photo Frames Stacked Vertically */}
+            {/* 3 Photo Frames Stacked Vertically */}
             <div className="flex flex-col space-y-3 sm:space-y-4">
-              {DATA.reasons.map((reason, idx) => (
-                <StripFrame key={reason.id} reason={reason} index={idx} />
+              {displayedReasons.map((reason, idx) => (
+                <StripFrame
+                  key={reason.id}
+                  reason={reason}
+                  index={idx}
+                  currentImg={photos[idx]}
+                  onTriggerCrop={handleTriggerCrop}
+                />
               ))}
             </div>
 
@@ -370,16 +596,74 @@ export default function Reasons() {
             </div>
           </motion.div>
 
-          {/* Bottom Collage: Airmail Letter with Red Rose (Positioned on the side, not covering text or photos) */}
-          <motion.img 
-            src="/stickers/letter.webp" 
+          {/* ACTION BUTTONS: Upload, Reset & Save High-DPI Photobooth Strip (Lucide icons only) */}
+          <motion.div
+            className="relative z-30 mt-8 flex flex-col sm:flex-row items-center justify-center gap-3 w-full max-w-md px-4"
+            initial={{ opacity: 0, y: 15 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6, delay: 0.3 }}
+          >
+            {/* 1. Upload / Replace Photos Button */}
+            <button
+              onClick={() => handleTriggerCrop(0)}
+              className="w-full sm:w-auto px-5 py-3 rounded-full bg-[#2A060C] hover:bg-[#4A0E17] text-cream border border-amber-300/30 shadow-lg hover:shadow-xl hover:scale-105 active:scale-95 transition-all font-mono text-xs tracking-wider uppercase flex items-center justify-center gap-2 cursor-pointer"
+              title="Unggah dan sesuaikan foto kamu untuk dimasukkan ke photobooth strip"
+            >
+              <Upload className="w-4 h-4 text-amber-300" />
+              <span>Unggah / Ganti Foto</span>
+            </button>
+
+            {/* 2. Save High-DPI Photobooth Strip Button */}
+            <button
+              onClick={handleDownloadPhotostrip}
+              disabled={downloadStatus === 'loading'}
+              className="w-full sm:w-auto px-5 py-3 rounded-full bg-gradient-to-r from-amber-300 via-amber-200 to-amber-400 text-[#3B0A12] border border-amber-400 shadow-xl hover:shadow-2xl hover:scale-105 active:scale-95 transition-all font-mono text-xs tracking-wider uppercase font-bold flex items-center justify-center gap-2 cursor-pointer disabled:opacity-75 disabled:cursor-not-allowed"
+              title="Unduh 3-frame photobooth strip berkualitas 300 DPI Ultra-HD"
+            >
+              {downloadStatus === 'loading' ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin text-[#3B0A12]" />
+                  <span>Memproses Strip HD...</span>
+                </>
+              ) : downloadStatus === 'success' ? (
+                <>
+                  <Check className="w-4 h-4 text-emerald-800" />
+                  <span>Foto Berhasil Disimpan</span>
+                </>
+              ) : (
+                <>
+                  <Download className="w-4 h-4 text-[#3B0A12]" />
+                  <span>Simpan Strip Foto HD</span>
+                </>
+              )}
+            </button>
+
+            {/* 3. Reset Button (Only visible if photos have been customized) */}
+            {hasCustomPhotos && (
+              <button
+                onClick={handleResetPhotos}
+                className="w-full sm:w-auto px-4 py-3 rounded-full bg-black/40 hover:bg-black/60 text-cream/80 hover:text-cream border border-white/10 font-mono text-xs tracking-wider uppercase transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                title="Kembalikan ke foto bawaan"
+              >
+                <RefreshCw className="w-3.5 h-3.5 text-cream/70" />
+                <span>Reset</span>
+              </button>
+            )}
+          </motion.div>
+
+          <span className="font-mono text-[9px] text-cream/50 uppercase tracking-widest mt-2 relative z-30">
+            Kualitas Asli 300 DPI Ultra-HD · 100% Client-Side
+          </span>
+
+          {/* Bottom Collage: Airmail Letter with Red Rose */}
+          <motion.img
+            src="/stickers/letter.webp"
             alt="Airmail Envelope and Red Rose"
             style={{ y: yLetter, rotate: -8 }}
             className="absolute -bottom-6 sm:-bottom-10 -left-12 sm:-left-20 md:-left-28 w-28 sm:w-36 md:w-44 z-10 drop-shadow-xl pointer-events-none select-none"
           />
-
         </div>
-
       </div>
     </section>
   );
